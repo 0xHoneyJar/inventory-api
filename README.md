@@ -1,4 +1,4 @@
-# freeside-inventory
+# inventory-api
 
 > A **building** on the freeside platform (ADR-008). Sovereign, read-side
 > inventory/collections API — an Alchemy/Zapper/DeBank replacement for **our own**

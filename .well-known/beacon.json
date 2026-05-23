@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "slug": "freeside-inventory",
+  "slug": "inventory-api",
   "publisher": "0xHoneyJar",
   "is": {
     "one_liner": "Sovereign read-side inventory aggregator — joins sonar holdings with owned metadata, with a verifiable completeness envelope",

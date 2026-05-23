@@ -1,0 +1,486 @@
+{
+  "trackedHolders": [
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "address": "0x1111111111111111111111111111111111111111",
+      "tokenCount": 12,
+      "blockNumber": 9123456
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "address": "0x2222222222222222222222222222222222222222",
+      "tokenCount": 8,
+      "blockNumber": 9123456
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "address": "0x3333333333333333333333333333333333333333",
+      "tokenCount": 11,
+      "blockNumber": 9123456
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "address": "0x4444444444444444444444444444444444444444",
+      "tokenCount": 12,
+      "blockNumber": 9123456
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "address": "0x5555555555555555555555555555555555555555",
+      "tokenCount": 12,
+      "blockNumber": 9123456
+    }
+  ],
+  "tokens": [
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "1",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9123456
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "2",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9000137
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "3",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9000274
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "4",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9000411
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "5",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9000548
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "6",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9000685
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "7",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9000822
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "8",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9000959
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "9",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9001096
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "10",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9001233
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "11",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9001370
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "12",
+      "owner": "0x1111111111111111111111111111111111111111",
+      "blockNumber": 9001507
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "13",
+      "owner": "0x2222222222222222222222222222222222222222",
+      "blockNumber": 9001644
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "14",
+      "owner": "0x2222222222222222222222222222222222222222",
+      "blockNumber": 9001781
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "15",
+      "owner": "0x2222222222222222222222222222222222222222",
+      "blockNumber": 9001918
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "16",
+      "owner": "0x2222222222222222222222222222222222222222",
+      "blockNumber": 9002055
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "17",
+      "owner": "0x2222222222222222222222222222222222222222",
+      "blockNumber": 9002192
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "18",
+      "owner": "0x2222222222222222222222222222222222222222",
+      "blockNumber": 9002329
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "19",
+      "owner": "0x2222222222222222222222222222222222222222",
+      "blockNumber": 9002466
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "20",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9002603
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "21",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9002740
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "22",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9002877
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "23",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9003014
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "24",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9003151
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "25",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9003288
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "26",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9003425
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "27",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9003562
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "28",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9003699
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "29",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9003836
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "30",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9003973
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "31",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9004110
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "32",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9004247
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "33",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9004384
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "34",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9004521
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "35",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9004658
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "36",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9004795
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "37",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9004932
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "38",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9005069
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "39",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9005206
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "40",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9005343
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "41",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9005480
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "42",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9005617
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "43",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9005754
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "44",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9005891
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "45",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9006028
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "46",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9006165
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "47",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9006302
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "48",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9006439
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "49",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9006576
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "50",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9006713
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "2769",
+      "owner": "0x2222222222222222222222222222222222222222",
+      "blockNumber": 9006850
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "6805",
+      "owner": "0x4444444444444444444444444444444444444444",
+      "blockNumber": 9006987
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "4803",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9007124
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "876",
+      "owner": "0x3333333333333333333333333333333333333333",
+      "blockNumber": 9007261
+    },
+    {
+      "collectionKey": "mibera",
+      "chainId": 80094,
+      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+      "tokenId": "9503",
+      "owner": "0x5555555555555555555555555555555555555555",
+      "blockNumber": 9007398
+    }
+  ]
+}

@@ -152,6 +152,27 @@ export async function getNftsForOwner(
   };
 }
 
+/**
+ * getProfilePicture(address) — best-available profile image for a wallet.
+ *
+ * Returns the imageUrl of the holder's first owned NFT (real Mibera artwork via
+ * the codex), or null when they own none / ownership isn't resolvable yet.
+ * Owner→tokenIds is fixture-backed today (the live sonar Token index is empty —
+ * see docs/sonar-ownership-gap.md); this auto-upgrades to live-for-all the
+ * moment sonar populates the per-token owner index, with NO change here.
+ * Consumers (e.g. freeside-characters' resolvePfp) fall back to their own pfp
+ * source on null — so the spotlight is never "an anonymous mibera" (Issue #87).
+ */
+export async function getProfilePicture(
+  address: string,
+  options: { contract?: string } = {}
+): Promise<string | null> {
+  const contract = options.contract ?? MIBERA_CONTRACT;
+  const collection = await getNftsForOwner(address, contract, { pageSize: 1 });
+  const first = collection.nfts[0];
+  return first && first.imageUrl.length > 0 ? first.imageUrl : null;
+}
+
 export async function getNftMetadata(
   contract: string,
   tokenId: string

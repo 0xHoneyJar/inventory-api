@@ -1,4 +1,4 @@
-export { getHoldings, getNftsForOwner, getNftMetadata } from './src/inventory.js';
+export { getHoldings, getNftsForOwner, getNftMetadata, getProfilePicture } from './src/inventory.js';
 export type {
   HoldingsResponse,
   ContractHolding,

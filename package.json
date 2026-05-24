@@ -1,5 +1,5 @@
 {
-  "name": "@freeside/inventory",
+  "name": "@0xhoneyjar/inventory",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",

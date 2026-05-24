@@ -1,7 +1,7 @@
 # Railway deploy config — inventory-api (Bun/Hyper HTTP+MCP service).
 # Consumed over the wire by honeyroad + agents; reads the sonar belt over GraphQL.
 [build]
-builder = "nixpacks"
+builder = "dockerfile"
 
 [deploy]
 startCommand = "bun src/app.ts"

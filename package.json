@@ -2,29 +2,26 @@
   "name": "@0xhoneyjar/inventory",
   "version": "0.1.0",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "files": ["dist", "fixtures"],
+  "private": true,
+  "description": "Sovereign read-side inventory aggregator — a Hyper (Bun) service consumed over HTTP + MCP",
   "scripts": {
-    "build": "tsc",
+    "dev": "bun --hot src/app.ts",
+    "start": "bun src/app.ts",
+    "serve": "bun src/app.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
-    "serve": "bun src/server/server.ts",
-    "openapi:emit": "bun src/server/emit-openapi.ts"
+    "openapi:emit": "bun src/emit-openapi.ts",
+    "mcp:emit": "bun src/emit-mcp.ts"
   },
   "dependencies": {
-    "ethereum-cryptography": "^2.2.1"
+    "ethereum-cryptography": "^2.2.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "vitest": "^1.6.0",
+    "@types/bun": "^1.3.14",
+    "@types/node": "^20.12.7",
+    "@usehyper/cli": "^0.1.1",
     "typescript": "^5.4.5",
-    "@types/node": "^20.12.7"
+    "vitest": "^1.6.0"
   }
 }

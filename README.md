@@ -17,34 +17,38 @@
 - Does **NOT** proxy chain RPC — it consumes `freeside-sonar` for indexed reads.
 - Does **NOT** own metadata — that's the codex (today) / `freeside-storage` (sovereign target).
 
-## API (library)
+## Service (HTTP + MCP)
 
-```ts
-import { getHoldings, getNftsForOwner, getNftMetadata } from "@0xhoneyjar/inventory";
-```
-
-| Method | Returns | Source |
-|--------|---------|--------|
-| `getHoldings(address)` | holdings (counts + tokenIds) + completeness envelope | sonar |
-| `getNftsForOwner(address, contract)` | paginated NFTs w/ metadata | sonar ⨝ codex |
-| `getNftMetadata(contract, tokenId)` | single MetadataDocument | codex |
-
-## Service transport (HTTP + MCP)
-
-Consumers (e.g. a Next.js frontend) use this building over **HTTP + MCP**, not
-as an npm import. A thin Bun transport (`src/server/`) exposes the library
-functions as routes and emits an OpenAPI 3.1 spec + an MCP tool manifest from a
-single route table. The library stays the core — the server only calls it.
+inventory-api is a **Hyper** (hyperjs.ai) service running on **Bun**, consumed
+over the wire — **not an npm package** (honeyroad reads it over HTTP + MCP).
+One route declaration per endpoint (`src/routes.ts`) generates the runtime,
+the OpenAPI 3.1 document, and the MCP tool surface from a single source. The
+route handlers are thin — they call the domain functions in `src/inventory.ts`
+(the sonar ⨝ codex join + ACVP envelope), which remain the core.
 
 ```bash
-bun run serve            # GET /holdings/:address, /nfts/:contract/owner/:address, /nfts/:contract/:tokenId
-bun run openapi:emit     # writes openapi.json (the consumer's drift-CI anchor)
+bun run dev            # hot-reload dev server (PORT, default 8787)
+bun run start          # production server
+bun run openapi:emit   # writes openapi.json (the consumer's drift-CI anchor)
+bun run mcp:emit       # writes mcp.json (MCP tool manifest)
+bun run typecheck      # tsc --noEmit (Bun tsconfig)
+npm test               # vitest — runs fully offline
 ```
 
-Discovery: `GET /openapi.json` (OpenAPI 3.1) and `GET /.well-known/mcp.json`
-(MCP tools). Full Hyper (hyperjs.ai) adoption was deferred in favor of a
-minimal `Bun.serve` to keep the library Node-pure — see
-[`src/server/README.md`](src/server/README.md) for the rationale.
+| Route | Returns | Source | MCP tool |
+|-------|---------|--------|----------|
+| `GET /holdings/:address` | holdings (counts + tokenIds) + completeness envelope | sonar | `getHoldings` |
+| `GET /nfts/:contract/owner/:address` | paginated NFTs w/ metadata | sonar ⨝ codex | `getNftsForOwner` |
+| `GET /nfts/:contract/:tokenId` | single MetadataDocument | codex | `getNftMetadata` |
+
+Discovery: `GET /openapi.json` (OpenAPI 3.1), `GET /docs` (Swagger UI),
+`GET /.well-known/mcp.json` (MCP manifest), `POST /mcp` (MCP JSON-RPC 2.0),
+`GET /health`.
+
+The Hyper framework is **source-distributed** under `src/hyper/` (vendored via
+`bun create hyper` + `hyper add openapi openapi-zod mcp` — yours to read/edit;
+tracked in `hyper.lock.json`). The domain functions stay importable internally
+via `index.ts` for the route handlers + tests.
 
 ## Modes
 
@@ -53,7 +57,7 @@ minimal `Bun.serve` to keep the library Node-pure — see
   holder counts + a real ACVP envelope from the live belt. Fail-soft: unreachable → fixture + `degraded`.
 
   ```bash
-  SONAR_GRAPHQL_ENDPOINT=https://<belt-gateway-host>/v1/graphql npm test -- live-smoke
+  SONAR_GRAPHQL_ENDPOINT=https://<belt-gateway-host>/v1/graphql npx vitest run live-smoke
   ```
 
 ## Ownership activation (DEP-2)

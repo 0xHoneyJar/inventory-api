@@ -1,17 +1,19 @@
 {
   "compilerOptions": {
-    "strict": true,
-    "module": "ESNext",
     "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
     "moduleResolution": "bundler",
-    "outDir": "./dist",
-    "rootDir": ".",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "types": ["@types/bun"],
+    "paths": {
+      "@hyper/*": ["./src/hyper/*", "./src/hyper/*/index.ts"]
+    }
   },
-  "include": ["index.ts", "types.ts", "src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "tests", "src/server"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "index.ts", "types.ts"]
 }

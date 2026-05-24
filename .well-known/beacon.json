@@ -24,10 +24,15 @@
     }
   ],
   "capabilities": ["getHoldings", "getNftsForOwner", "getNftMetadata", "getProfilePicture"],
+  "transport": {
+    "http": ["GET /holdings/{address}", "GET /nfts/{contract}/owner/{address}", "GET /nfts/{contract}/{tokenId}"],
+    "openapi": "/openapi.json (3.1)",
+    "mcp": "/.well-known/mcp.json"
+  },
   "cycle_state": {
     "status": "candidate",
     "since": "2026-05-23",
     "next_review": "2026-08-21"
   },
-  "_comment": "Library stage. Live counts + ACVP envelope wired to belt-gateway; per-token ownership (getNftsForOwner/getProfilePicture rich path) + MCP/HTTP deployment pending the sonar owner-token index (docs/sonar-ownership-gap.md). composes_with omitted pending port-schema sealing (ADR-007 App A.2 / ADR-008 §D-11) — consumes sonar-api + storage-api per README."
+  "_comment": "Library + thin Bun HTTP/MCP transport (src/server/, DEP-2). Live counts + ACVP envelope wired to belt-gateway; per-token ownership (Token + CandiesHolderBalance) activated against sonar cycle/sonar-belt-factory (DEP-2) — covered hermetically, pending live deploy/reindex verification (docs/sonar-ownership-gap.md). Full Hyper adoption deferred for a minimal Bun.serve to keep the library Node-pure (src/server/README.md). composes_with omitted pending port-schema sealing (ADR-007 App A.2 / ADR-008 §D-11) — consumes sonar-api + storage-api per README."
 }

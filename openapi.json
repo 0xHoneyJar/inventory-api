@@ -1,0 +1,437 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "inventory-api",
+    "version": "0.1.0",
+    "description": "Sovereign read-side inventory aggregator — joins sonar holdings with owned codex metadata + a completeness envelope."
+  },
+  "paths": {
+    "/holdings/{address}": {
+      "get": {
+        "operationId": "getHoldings",
+        "summary": "Resolve a wallet's holdings + ACVP completeness envelope",
+        "tags": [
+          "inventory"
+        ],
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "Holder wallet address (0x-prefixed, 40 hex chars).",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            }
+          },
+          {
+            "name": "contracts",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated contract addresses to filter to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated chain ids to filter to.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoldingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nfts/{contract}/owner/{address}": {
+      "get": {
+        "operationId": "getNftsForOwner",
+        "summary": "Paginated NFTs (sonar ⨝ codex) owned by a wallet",
+        "tags": [
+          "inventory"
+        ],
+        "parameters": [
+          {
+            "name": "contract",
+            "in": "path",
+            "required": true,
+            "description": "Collection contract address (0x-prefixed, 40 hex chars).",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            }
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "Holder wallet address (0x-prefixed, 40 hex chars).",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "description": "Page size (1-100, default 100).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "pageKey",
+            "in": "query",
+            "required": false,
+            "description": "Opaque pagination cursor from a prior response.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NFTCollection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nfts/{contract}/{tokenId}": {
+      "get": {
+        "operationId": "getNftMetadata",
+        "summary": "Single NFT metadata document from the codex",
+        "tags": [
+          "inventory"
+        ],
+        "parameters": [
+          {
+            "name": "contract",
+            "in": "path",
+            "required": true,
+            "description": "Collection contract address (0x-prefixed, 40 hex chars).",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            }
+          },
+          {
+            "name": "tokenId",
+            "in": "path",
+            "required": true,
+            "description": "Numeric token id.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Attribute": {
+        "type": "object",
+        "required": [
+          "trait_type",
+          "value"
+        ],
+        "properties": {
+          "trait_type": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "CompletenessEnvelope": {
+        "type": "object",
+        "required": [
+          "as_of_block",
+          "holder_count",
+          "source",
+          "complete"
+        ],
+        "properties": {
+          "as_of_block": {
+            "type": "integer"
+          },
+          "holder_count": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "sonar"
+            ]
+          },
+          "complete": {
+            "description": "true when the answer is provably complete; 'degraded' when upstream was unreachable.",
+            "oneOf": [
+              {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "degraded"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "ContractHolding": {
+        "type": "object",
+        "required": [
+          "contractAddress",
+          "chainId",
+          "tokenCount",
+          "tokenIds"
+        ],
+        "properties": {
+          "contractAddress": {
+            "type": "string"
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "tokenCount": {
+            "type": "integer"
+          },
+          "tokenIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "HoldingsResponse": {
+        "type": "object",
+        "required": [
+          "holdings",
+          "completeness"
+        ],
+        "properties": {
+          "holdings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContractHolding"
+            }
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/CompletenessEnvelope"
+          }
+        }
+      },
+      "NFT": {
+        "type": "object",
+        "required": [
+          "tokenId",
+          "name",
+          "description",
+          "imageUrl",
+          "contentType",
+          "attributes"
+        ],
+        "properties": {
+          "tokenId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attribute"
+            }
+          }
+        }
+      },
+      "NFTCollection": {
+        "type": "object",
+        "required": [
+          "contractAddress",
+          "name",
+          "symbol",
+          "totalSupply",
+          "nfts"
+        ],
+        "properties": {
+          "contractAddress": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "totalSupply": {
+            "type": "integer"
+          },
+          "nfts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NFT"
+            }
+          },
+          "pageKey": {
+            "type": "string"
+          }
+        }
+      },
+      "MetadataDocument": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "image",
+          "attributes"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attribute"
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

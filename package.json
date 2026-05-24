@@ -14,7 +14,10 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
+    "serve": "bun src/server/server.ts",
+    "openapi:emit": "bun src/server/emit-openapi.ts"
   },
   "dependencies": {
     "ethereum-cryptography": "^2.2.1"

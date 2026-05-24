@@ -54,8 +54,11 @@ export async function getHoldings(
     : [MIBERA_CONTRACT];
 
   // Live mode (SONAR_GRAPHQL_ENDPOINT set): real holder counts + real completeness
-  // from the belt-gateway. tokenIds await the sonar per-token ownership index —
-  // see docs/sonar-ownership-gap.md (per ADR-008, that index is sonar's to publish).
+  // from the belt-gateway, plus per-token ownership now that the sonar belt-factory
+  // branch publishes the `Token` index (DEP-2 unblock — docs/sonar-ownership-gap.md).
+  // Fail-soft throughout: count comes from TrackedHolder; tokenIds come from the
+  // `Token` index but degrade to [] (not a crash) if that sub-query is unavailable,
+  // so a partial belt still serves real counts.
   if (liveSonar.isLiveMode()) {
     const completeness = await buildEnvelopeLive(
       MIBERA_CONTRACT,
@@ -65,12 +68,43 @@ export async function getHoldings(
     const liveHoldings: ContractHolding[] = [];
     for (const contractAddress of targetContracts) {
       const chainId = options.chains?.[0] ?? MIBERA_CHAIN_ID;
-      const count = await liveSonar.liveHolderTokenCount(
-        checksummedAddress,
-        MIBERA_COLLECTION_KEY
-      );
+
+      let count: number;
+      try {
+        count = await liveSonar.liveHolderTokenCount(
+          checksummedAddress,
+          MIBERA_COLLECTION_KEY
+        );
+      } catch {
+        // Endpoint unreachable for the count query — the completeness envelope
+        // is already `degraded` (buildEnvelopeLive caught the same outage).
+        // Degrade this contract's holdings to the fixture instead of crashing
+        // the whole response (README: unreachable -> fixture + degraded).
+        const tokens = sonarClient.getTokensByOwner(
+          checksummedAddress,
+          contractAddress,
+          chainId
+        );
+        if (tokens.length === 0) continue;
+        liveHoldings.push({
+          contractAddress,
+          chainId,
+          tokenCount: tokens.length,
+          tokenIds: tokens.map((t) => t.tokenId),
+        });
+        continue;
+      }
+
       if (count === 0) continue;
-      liveHoldings.push({ contractAddress, chainId, tokenCount: count, tokenIds: [] });
+      let tokenIds: string[] = [];
+      try {
+        tokenIds = await liveSonar.liveOwnerTokenIds(checksummedAddress, contractAddress);
+      } catch {
+        // Per-token index unavailable (older belt / transient) — keep the real
+        // count, leave tokenIds empty. Never let this fail the whole response.
+        tokenIds = [];
+      }
+      liveHoldings.push({ contractAddress, chainId, tokenCount: count, tokenIds });
     }
     return { holdings: liveHoldings, completeness };
   }
@@ -95,6 +129,31 @@ export async function getHoldings(
   return { holdings, completeness };
 }
 
+/** Build a single NFT record from a tokenId by joining codex metadata. */
+function tokenIdToNFT(tokenId: string) {
+  const record = codexClient.getToken(tokenId);
+  if (!record) {
+    // Minimal fallback if codex record is missing
+    return {
+      tokenId,
+      name: `Mibera #${tokenId}`,
+      description: "Unknown",
+      imageUrl: "",
+      contentType: "image/png",
+      attributes: [],
+    };
+  }
+  const imageUrl = codexClient.getImageUrl(tokenId) ?? "";
+  const grailRecord = codexClient.getGrailRecord(tokenId);
+  return codexToNFT(
+    tokenId,
+    record,
+    imageUrl,
+    codexClient.isGrail(tokenId),
+    grailRecord
+  );
+}
+
 export async function getNftsForOwner(
   address: string,
   contract: string,
@@ -104,41 +163,32 @@ export async function getNftsForOwner(
   const checksummedContract = validateAddress(contract, "contract");
   const chainId = MIBERA_CHAIN_ID;
 
-  const tokens = sonarClient.getTokensByOwner(
-    checksummedAddress,
-    checksummedContract,
-    chainId
-  );
+  // Resolve owner -> tokenIds. In live mode the sonar `Token` index is the
+  // source of truth (DEP-2 unblock); fail-soft to fixtures if it is
+  // unreachable so the gallery still renders something offline. In hermetic
+  // mode the fixture sonar client is the only source.
+  let tokenIds: string[];
+  if (liveSonar.isLiveMode()) {
+    try {
+      tokenIds = await liveSonar.liveOwnerTokenIds(checksummedAddress, checksummedContract);
+    } catch {
+      tokenIds = sonarClient
+        .getTokensByOwner(checksummedAddress, checksummedContract, chainId)
+        .map((t) => t.tokenId);
+    }
+  } else {
+    tokenIds = sonarClient
+      .getTokensByOwner(checksummedAddress, checksummedContract, chainId)
+      .map((t) => t.tokenId);
+  }
 
   const { page, nextPageKey } = applyPagination(
-    tokens,
+    tokenIds,
     options.pageSize ?? 100,
     options.pageKey
   );
 
-  const nfts = page.map((token) => {
-    const record = codexClient.getToken(token.tokenId);
-    if (!record) {
-      // Minimal fallback if codex record is missing
-      return {
-        tokenId: token.tokenId,
-        name: `Mibera #${token.tokenId}`,
-        description: "Unknown",
-        imageUrl: "",
-        contentType: "image/png",
-        attributes: [],
-      };
-    }
-    const imageUrl = codexClient.getImageUrl(token.tokenId) ?? "";
-    const grailRecord = codexClient.getGrailRecord(token.tokenId);
-    return codexToNFT(
-      token.tokenId,
-      record,
-      imageUrl,
-      codexClient.isGrail(token.tokenId),
-      grailRecord
-    );
-  });
+  const nfts = page.map(tokenIdToNFT);
 
   const collectionMeta = codexClient.getCollectionMeta(checksummedContract);
 

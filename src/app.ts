@@ -77,6 +77,8 @@ export const app = new Hyper({ name: "inventory-api" })
 // import.meta.main, which is false when imported by tests / emit scripts).
 if (import.meta.main) {
   const port = Number(process.env.PORT) || 8787;
-  app.listen(port);
-  console.log(`[inventory-api] listening on :${port} (PORT=${process.env.PORT ?? "unset"})`);
+  // Bind 0.0.0.0 (not Hyper's localhost default) so the platform healthcheck
+  // can reach the container — root cause of the Railway deploy failures.
+  app.listen({ port, hostname: "0.0.0.0" });
+  console.log(`[inventory-api] listening on 0.0.0.0:${port} (PORT=${process.env.PORT ?? "unset"})`);
 }

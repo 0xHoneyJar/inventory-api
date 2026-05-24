@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "tools": [
+    {
+      "name": "getHoldings",
+      "description": "Get a wallet's NFT holdings for registered collections (Mibera first), with per-token tokenIds and a completeness envelope (as_of_block, holder_count, source, complete) that proves the result is complete as of a block.",
+      "method": "GET",
+      "path": "/holdings/:address",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "name": "getNftsForOwner",
+      "description": "Get the paginated list of NFTs (with full metadata: name, image, attributes) owned by a wallet for a given contract. Supports pageSize + pageKey cursoring.",
+      "method": "GET",
+      "path": "/nfts/:contract/owner/:address",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "name": "getNftMetadata",
+      "description": "Get the metadata document (name, description, image, attributes) for a single token id of a contract, sourced from the codex.",
+      "method": "GET",
+      "path": "/nfts/:contract/:tokenId",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

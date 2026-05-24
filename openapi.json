@@ -1,0 +1,308 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "inventory-api",
+    "version": "0.1.0",
+    "description": "Sovereign read-side inventory aggregator — joins sonar holdings with owned codex metadata + an ACVP completeness envelope."
+  },
+  "paths": {
+    "/holdings/{address}": {
+      "get": {
+        "operationId": "getHoldings",
+        "tags": [
+          "inventory"
+        ],
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "contracts",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "holdings": [
+                    {
+                      "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+                      "chainId": 80094,
+                      "tokenCount": 12,
+                      "tokenIds": [
+                        "1",
+                        "2",
+                        "3"
+                      ]
+                    }
+                  ],
+                  "completeness": {
+                    "as_of_block": 9123456,
+                    "holder_count": 5,
+                    "source": "sonar",
+                    "complete": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "declared error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nfts/{contract}/owner/{address}": {
+      "get": {
+        "operationId": "getNftsForOwner",
+        "tags": [
+          "inventory"
+        ],
+        "parameters": [
+          {
+            "name": "contract",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "address",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "contractAddress": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+                  "name": "Mibera",
+                  "symbol": "MIBERA",
+                  "totalSupply": 10000,
+                  "nfts": [
+                    {
+                      "tokenId": "1",
+                      "name": "Mibera #1",
+                      "description": "A Freetekno of Greek origin...",
+                      "imageUrl": "https://assets.0xhoneyjar.xyz/.../1.png",
+                      "contentType": "image/png",
+                      "attributes": [
+                        {
+                          "trait_type": "archetype",
+                          "value": "Freetekno"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "declared error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nfts/{contract}/{tokenId}": {
+      "get": {
+        "operationId": "getNftMetadata",
+        "tags": [
+          "inventory"
+        ],
+        "parameters": [
+          {
+            "name": "contract",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "tokenId",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "name": "Air",
+                  "description": "Cloud...",
+                  "image": "https://assets.0xhoneyjar.xyz/Mibera/grails/air.webp",
+                  "attributes": [
+                    {
+                      "trait_type": "Grail",
+                      "value": "true"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "declared error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "declared error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

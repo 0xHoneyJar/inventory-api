@@ -76,5 +76,7 @@ export const app = new Hyper({ name: "inventory-api" })
 // `bun src/app.ts` boots Bun.serve; importing for tests does not (guarded on
 // import.meta.main, which is false when imported by tests / emit scripts).
 if (import.meta.main) {
-  app.listen(Number(process.env.PORT) || 8787);
+  const port = Number(process.env.PORT) || 8787;
+  app.listen(port);
+  console.log(`[inventory-api] listening on :${port} (PORT=${process.env.PORT ?? "unset"})`);
 }

@@ -1,0 +1,108 @@
+name: "releasing-version"
+version: "1.0.0"
+model: "native"
+color: "green"
+
+effort_hint: medium
+danger_level: moderate
+categories:
+  - operations
+  - documentation
+
+description: |
+  Automates the scoring version release flow. Collects closed issues and merged
+  PRs from both score-api and midi-interface repos, categorizes changes, and
+  generates three artifacts: docs/CHANGELOG.md entry, DB migration SQL with
+  user-facing changelog, and GitHub Release notes. Cross-repo, contributor-aware,
+  with human review before any writes.
+
+triggers:
+  - "/release"
+  - "cut release"
+  - "create release"
+  - "version bump"
+
+negative_triggers:
+  - "deploy"
+  - "rollback"
+  - "hotfix"
+
+examples:
+  - context: "Sprint work complete, ready for new scoring version"
+    user_says: "/release v0.4"
+    agent_action: "Collect data from both repos since v0.3, categorize changes, draft changelog + migration + GH release, present for review"
+  - context: "User wants to cut a release with auto-detected version"
+    user_says: "/release"
+    agent_action: "Auto-detect next version from package.json, collect data since last release date, categorize and generate artifacts"
+
+dependencies:
+  upstream: []
+  artifacts: []
+
+inputs:
+  - name: "version"
+    type: "string"
+    pattern: "^v?[0-9]+\\.[0-9]+$"
+    required: false
+    description: "Target version (e.g., v0.4). Auto-incremented from package.json minor if omitted."
+  - name: "since"
+    type: "string"
+    required: false
+    description: "ISO date to collect from (YYYY-MM-DD). Defaults to date of last release in docs/CHANGELOG.md."
+
+inputExamples:
+  - input:
+      version: "v0.4"
+    description: "Explicit version target"
+  - input: {}
+    description: "Auto-detect version and date range"
+  - input:
+      version: "v0.5"
+      since: "2026-03-01"
+    description: "Explicit version and date override"
+
+outputs:
+  - path: "docs/CHANGELOG.md"
+    description: "Prepended changelog entry following v0.2/v0.3 format"
+    format: markdown
+  - path: "supabase/migrations/{NNN}_v{X.Y}_user_changelog.sql"
+    description: "User-facing changelog migration for scoring_versions table"
+    format: sql
+  - path: "GitHub Release"
+    description: "Published GitHub release with condensed notes"
+    format: markdown
+
+protocols:
+  required:
+    - name: "session-continuity"
+      path: ".claude/protocols/session-continuity.md"
+      purpose: "Maintain release context across sessions"
+  recommended:
+    - name: "grounding-enforcement"
+      path: ".claude/protocols/grounding-enforcement.md"
+      purpose: "Cite issues and PRs accurately"
+
+protocol_loading:
+  on_session_start:
+    - "session-continuity"
+  during_execution:
+    - "grounding-enforcement"
+
+resources:
+  scripts:
+    - resources/scripts/release-collector.sh
+  templates:
+    - resources/templates/changelog-entry.md
+    - resources/templates/migration-user-changelog.sql
+    - resources/templates/github-release.md
+
+input_guardrails:
+  pii_filter:
+    enabled: true
+    mode: blocking
+  injection_detection:
+    enabled: true
+    threshold: 0.7
+  relevance_check:
+    enabled: true
+    reject_irrelevant: true

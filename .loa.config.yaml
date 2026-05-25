@@ -1,0 +1,91 @@
+# Loa Framework Configuration — inventory-api
+# Initial mount: cluster-meta/loa-mount-2026-05-25 per ADR-009 D-4.
+# Mirrors loa-freeside's posture (standard persistence, strict integrity).
+
+# =============================================================================
+# Persistence Mode
+# =============================================================================
+# standard: Commit grimoire + beads to repo (CI-discoverable, agent-discoverable)
+persistence_mode: standard
+
+# =============================================================================
+# Integrity Enforcement
+# =============================================================================
+# strict: Block agent execution on System Zone drift (matches loa-freeside)
+integrity_enforcement: strict
+
+# =============================================================================
+# Drift Resolution Policy
+# =============================================================================
+# code: Update docs to match implementation (this is a brownfield mount —
+# inventory-api was built pre-Loa, so existing code IS truth).
+drift_resolution: code
+
+# =============================================================================
+# Agent Configuration
+# =============================================================================
+disabled_agents: []
+
+# =============================================================================
+# Goal Traceability
+# =============================================================================
+goal_traceability:
+  enabled: true
+  require_goal_ids: true
+  auto_assign_ids: true
+  generate_appendix_c: true
+  generate_e2e_task: true
+
+goal_validation:
+  enabled: true
+  block_on_at_risk: false
+  block_on_blocked: true
+  require_e2e_task: true
+
+# =============================================================================
+# Tool Preferences
+# =============================================================================
+tool_preferences:
+  beads_cli: br
+  search_cli: ck
+  deprecated_tools:
+    - bd
+    - grep
+
+# =============================================================================
+# Custom Paths
+# =============================================================================
+paths:
+  grimoire: grimoires/loa
+  beads: .beads
+
+# =============================================================================
+# Memory
+# =============================================================================
+memory:
+  notes_file: grimoires/loa/NOTES.md
+  trajectory_dir: grimoires/loa/a2a/trajectory
+  trajectory_retention_days: 30
+  auto_restore: true
+  auto_sync: false
+
+# =============================================================================
+# Run Bridge — disabled until first cycle has artifacts to iterate on
+# =============================================================================
+run_bridge:
+  enabled: false
+
+run_mode:
+  enabled: true
+  defaults:
+    max_cycles: 20
+    timeout_hours: 8
+  sprint_plan:
+    branch_prefix: "feature/"
+    default_branch_name: "release"
+    consolidate_pr: true
+    commit_prefix: "feat"
+    include_commits_by_sprint: true
+  git:
+    auto_push: false        # cluster-meta posture: operator-gated push
+    create_draft_pr: false  # operator opens PRs

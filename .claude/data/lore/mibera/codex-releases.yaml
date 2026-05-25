@@ -1,0 +1,152 @@
+# Codex Release Names — Mibera cultural identifiers for scoring versions
+metadata:
+  description: "Maps scoring versions to Codex names from the Mibera cultural universe"
+  pool_source: "mibera-codex knowledge base"
+
+assigned:
+  - id: codex-v0.1.0-bear-cave-wall
+    term: "Bear Cave Wall"
+    version: "v0.1.0"
+    subtitle: "Foundation"
+    short: "First shadows on stone — the primitive scoring system takes form"
+    context: |
+      V0.1.0 encompasses all pre-semver formula iterations (V2–V8.1)
+      and dashboard versions (v1.0–v2.4). From basic log2 transforms
+      through sybil detection, smart transforms, diamond hands,
+      multiplicative conviction, market timing, and badges. The entire
+      scoring system projected onto the wall for the first time.
+    source: "score-api V2–V8.1 changelog, Codex philosophy.md"
+    tags: [release, foundation, origin]
+
+  - id: codex-v0.2.0-the-awakening
+    term: "The Awakening"
+    version: "v0.2.0"
+    subtitle: "Lifecycle Tracking"
+    short: "The system opens its eyes — burns, staking, and Diamond Hands recognized"
+    context: |
+      Pipeline was dormant since launch, then awoke with the 6-hour
+      cron. Burns became conviction signals (ego death = recognition).
+      Transfer classification = the system learning nuance. Staking
+      no longer penalized. Diamond Hands restored.
+    source: "score-api v0.2.0 changelog"
+    tags: [release, lifecycle, awakening]
+
+  - id: codex-v0.3.0-freetekno
+    term: "Freetekno"
+    version: "v0.3.0"
+    subtitle: "Multi-Wallet & Hardening"
+    short: "Nomadic sound system — multiple wallets unified, security hardened"
+    context: |
+      Freetekno: the underground rave movement where sound systems are
+      free and open. V0.3.0 unified multi-wallet scoring (your wallets
+      combine freely), hardened security (12 audit findings), and
+      optimized the pipeline. Free as in freedom to bring all your
+      wallets to the party.
+    source: "score-api v0.3.0 changelog, Codex archetypes.md"
+    tags: [release, multi-wallet, security, rave]
+
+pool:
+  - id: codex-pool-kaironic
+    term: "Kaironic"
+    short: "The right moment — ecosystem-specific qualitative time"
+    tags: [time, philosophy, mibera]
+
+  - id: codex-pool-the-refusal
+    term: "The Refusal"
+    short: "The system refuses what doesn't belong — trust boundaries"
+    tags: [trust, security, philosophy]
+
+  - id: codex-pool-catharsis
+    term: "Catharsis"
+    short: "Liberation through consequence — purification of the system"
+    tags: [transformation, purification]
+
+  - id: codex-pool-autopoiesis
+    term: "Autopoiesis"
+    short: "Self-creating system — the formula bootstraps itself"
+    tags: [emergence, self-organization]
+
+  - id: codex-pool-k-time
+    term: "K-time"
+    short: "Dissociative temporality — conviction at the moment of the dip"
+    tags: [time, market, rave]
+
+  - id: codex-pool-pythia
+    term: "Pythia"
+    short: "The oracle — context-aware seeing, each signal read on its own terms"
+    tags: [intelligence, transforms, oracle]
+
+  - id: codex-pool-mercury
+    term: "Mercury"
+    short: "Messenger of precision — calibration and exactness"
+    tags: [precision, calibration]
+
+  - id: codex-pool-gaia
+    term: "Gaia"
+    short: "Earth mother — quality needs substance to exist"
+    tags: [quality, grounding]
+
+  - id: codex-pool-saturn
+    term: "Saturn"
+    short: "The taskmaster — consequences devour exploits"
+    tags: [penalties, discipline]
+
+  - id: codex-pool-libra
+    term: "Libra"
+    short: "The scales balance — symmetry and equilibrium"
+    tags: [balance, market]
+
+  - id: codex-pool-anamnesis
+    term: "Anamnesis"
+    short: "Recollection of forgotten knowledge — recovery, memory, restoration"
+    tags: [memory, recovery]
+
+  - id: codex-pool-egregore
+    term: "Egregore"
+    short: "Collective thought-form — emergent group intelligence"
+    tags: [collective, emergence, social]
+
+  - id: codex-pool-hyperstition
+    term: "Hyperstition"
+    short: "Fiction that makes itself real — predictions that shape the system"
+    tags: [emergence, prediction]
+
+  - id: codex-pool-mycelium
+    term: "Mycelium"
+    short: "Underground network — hidden connections between factors"
+    tags: [network, connection]
+
+  - id: codex-pool-noosphere
+    term: "Noosphere"
+    short: "Sphere of human thought — scoring as collective consciousness"
+    tags: [collective, intelligence]
+
+  - id: codex-pool-pleroma
+    term: "Pleroma"
+    short: "Gnostic fullness — all knowledge integrated"
+    tags: [completeness, integration]
+
+  - id: codex-pool-metanoia
+    term: "Metanoia"
+    short: "Fundamental change of mind — paradigm shift in the model"
+    tags: [transformation, paradigm]
+
+  - id: codex-pool-ouroboros
+    term: "Ouroboros"
+    short: "The snake eating its tail — system that feeds back into itself"
+    tags: [cycle, feedback]
+
+  - id: codex-pool-theurgy
+    term: "Theurgy"
+    short: "Divine work — engineering as ritual practice"
+    tags: [ritual, engineering]
+
+  - id: codex-pool-acidhouse
+    term: "Acidhouse"
+    short: "Second Summer of Love — PLUR, communal expression"
+    tags: [rave, community, archetype]
+
+  - id: codex-pool-chicago-detroit
+    term: "Chicago Detroit"
+    short: "Origins of house and techno — The Warehouse, the Music Box"
+    tags: [origin, archetype, rave]

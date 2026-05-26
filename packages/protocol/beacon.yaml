@@ -1,0 +1,154 @@
+# packages/protocol/beacon.yaml — inventory-api building beacon (BeaconV3)
+#
+# Source-of-truth authored shape; validated against
+#   loa-freeside/packages/beacon-schema/src/beacon-v3.ts (BeaconV3Schema).
+#
+# Placeholder discipline: the `composes_with.<sibling>.tag` hashes and the
+# `sealed_schemas.<n>.hash` below satisfy the schema regex but are NOT real
+# port-schema hashes. `freeside-cli doctor` recomputes them at validation /
+# deploy time and emits the resolved JSON to `/.well-known/beacon.json`.
+# Do not hand-fabricate real hashes here — same rule as the identity-api
+# beacon and the canonical loa-freeside inventory fixture comments.
+#
+# Shape ported + adapted from the canonical fixture:
+#   loa-freeside/packages/beacon-schema/tests/fixtures/freeside-inventory-v3.yaml
+# Adaptations vs. the fixture (each grounded against this repo's code):
+#   - schema_version bumped "2" → "3" (V3 fields are first-class here).
+#   - `composes_with.freeside-storage` REMOVED — no storage call in src/;
+#     metadata source today is the local `mibera-codex` fixture
+#     (src/codex-client.ts), with `freeside-storage` as the sovereign-target
+#     successor (see README §"Is not"). When storage absorbs metadata,
+#     re-add it here.
+#   - `composes_with.freeside-sonar.required` stays `true` (live path goes
+#     through src/live-sonar.ts; hermetic mode is a fail-soft fixture
+#     fallback, not an alternative substrate).
+#   - `tools` list rewritten to the THREE tools actually registered in
+#     src/routes.ts → mcp.json (getHoldings, getNftsForOwner, getNftMetadata).
+#     The fixture's list_holder_inventory / get_token_balance /
+#     resolve_collection_metadata names don't exist in code.
+#   - All Tag@version+hash + sealed_schemas hashes use the
+#     "0000…" placeholder discipline (doctor recomputes).
+#   - `acvp_invariants` marked ASPIRATIONAL via comments — the proof
+#     artifacts (tests/acvp/*.test.ts) do NOT exist in this repo yet.
+#     event_completeness is the most natural invariant here (it IS the
+#     completeness envelope: src/completeness.ts), but it is currently
+#     proved by tests/live-smoke.test.ts + tests/live-ownership.test.ts,
+#     not by a tests/acvp/ binding. Listing here documents intent;
+#     doctor / honest-status MAY flag these as pending bindings.
+#   - `sealed_schemas.<n>.path` points at a file that does NOT exist yet
+#     (packages/protocol/inventory-snapshot.schema.json); doctor SHOULD
+#     refuse to recompute the hash until the file lands. The path is
+#     declared here so the consumer surface is named even before sealed.
+#   - `cycle_state: candidate` matches README §Provenance verbatim
+#     ("Built 2026-05-23 … cycle_state: candidate"). The cell is deployed
+#     (inventory-mcp-production.up.railway.app, 401-gated), but its own
+#     provenance still claims candidate — honor that rather than
+#     unilaterally promote to active.
+
+schema_version: "3"
+slug: "inventory-api"
+publisher: "0xHoneyJar"
+
+# ─── Identity + boundaries (per ADR-008 §D-11) ───────────────────────────
+
+is:
+  one_liner: "Sovereign read-side inventory aggregator: ERC721 + ERC1155 holdings with ACVP completeness envelope"
+  scope:
+    - "Resolve a wallet's holdings + per-token tokenIds for registered collections (Mibera first)"
+    - "Join sonar-indexed ownership with locally-owned metadata (mibera-codex) on read"
+    - "Attach an ACVP completeness envelope (as_of_block, holder_count, source, complete)"
+    - "Return honeyroad's exact shapes as an Alchemy/Zapper/DeBank replacement for our own assets"
+    - "Expose the same surface over HTTP (OpenAPI 3.1) and MCP (JSON-RPC) from one Hyper graph"
+
+is_not:
+  - "Does NOT mint, burn, or initiate transfers — read-side only"
+  - "Does NOT proxy chain RPC — consumes freeside-sonar for indexed reads"
+  - "Does NOT own metadata — that's the codex (today) / freeside-storage (sovereign target)"
+  - "Will NOT call third-party indexers (Alchemy, Zapper, DeBank, Dune) in any code path"
+
+# ─── Composition (sibling buildings this cell reads at compose time) ──────
+# NOTE: the `tag` hashes below + the sealed_schemas hashes are PLACEHOLDERS —
+# they satisfy the format regex `TagName@\d+\.\d+\.\d+\+[a-f0-9]{8,16}` but
+# are NOT grounded against real port schemas. `freeside-cli doctor` recomputes
+# them at validation time. Same discipline as the identity-api beacon.
+
+composes_with:
+  freeside-sonar:
+    role: "Indexed read source: TrackedHolder (counts), Token (per-token ownership), chain_metadata (ACVP as_of_block)"
+    tag: "SonarPort@1.0.0+0000000000000000"   # PLACEHOLDER — doctor recomputes
+    required: true
+
+# ─── ACVP invariants (verifiability discipline) ───────────────────────────
+# ASPIRATIONAL: the proof_artifact paths below DO NOT EXIST YET in this repo.
+# The completeness envelope IS implemented (src/completeness.ts) and is
+# exercised by tests/live-smoke.test.ts + tests/live-ownership.test.ts —
+# but those tests do not live under tests/acvp/ with the invariant-binding
+# shape that the schema expects. Doctor SHOULD flag these as pending
+# bindings until the test files land. Listed here so the surface declares
+# its intended verifiability shape.
+
+acvp_invariants:
+  - id: event_completeness
+    scope: "Every holdings response carries a CompletenessEnvelope ({as_of_block, holder_count, source, complete}); degraded fallback never claims complete:true"
+    proof_artifact: "tests/acvp/event_completeness.test.ts"   # ASPIRATIONAL — file does not exist yet
+  - id: idempotency
+    scope: "Identical (address, contracts, chains) inputs within the same as_of_block return byte-identical responses"
+    proof_artifact: "tests/acvp/idempotency.test.ts"          # ASPIRATIONAL — file does not exist yet
+
+# ─── Sealed schemas (hash-verified protocol surface) ──────────────────────
+# The path below names the consumer-stable surface (inventory-snapshot) but
+# the file is NOT YET CREATED in this repo. Doctor SHOULD refuse to
+# recompute the hash until packages/protocol/inventory-snapshot.schema.json
+# lands. Until then this entry documents intent and locks the consumer set.
+
+sealed_schemas:
+  - path: "packages/protocol/inventory-snapshot.schema.json"
+    hash: "0000000000000000000000000000000000000000000000000000000000000000"  # PLACEHOLDER — doctor recomputes
+    consumers:
+      - "mibera-honeyroad"
+      - "identity-api"
+
+# ─── Cycle state (honest maturity signal) ─────────────────────────────────
+# Matches README §Provenance verbatim. The cell IS deployed (Railway,
+# inventory-mcp-production.up.railway.app), but its own README still
+# declares candidate — honor that. Promote to `active` once live-mode is
+# verified against a deployed sonar belt with non-empty Token index
+# (DEP-2 follow-up).
+
+cycle_state:
+  status: candidate
+  since: "2026-05-23"           # README §Provenance: "Built 2026-05-23"
+  next_review: "2026-08-23"     # +92d, within the +180d doctor cap
+
+# ─── Transport (V2 McpBlock — already deployed) ───────────────────────────
+# The 3 tools below mirror the routes registered in src/routes.ts that opt
+# into MCP via meta.mcp, exactly as exported in mcp.json (the runtime
+# manifest emitted by `bun run mcp:emit`). The auth/credentials_ref key
+# (MCP_INVENTORY_UPSTREAM_KEY) matches the canonical fixture so the
+# loa-freeside gateway provisioner finds the same Railway secret name.
+
+mcp:
+  shape: data
+  paths:
+    - remote-http
+  remote:
+    transport: streamable-http
+    endpoint: ${MCP_REMOTE_ENDPOINT}
+  auth:
+    kind: api-key
+    header: X-MCP-Key
+    credentials_ref:
+      type: railway-secret
+      key: MCP_INVENTORY_UPSTREAM_KEY
+  capabilities:
+    - tools
+  tools:
+    - getHoldings           # src/routes.ts → GET /holdings/:address
+    - getNftsForOwner       # src/routes.ts → GET /nfts/:contract/owner/:address
+    - getNftMetadata        # src/routes.ts → GET /nfts/:contract/:tokenId
+  source_of_truth:
+    type: database
+  pricing:
+    model: free
+    description: First-party tenant — free during initial rollout
+  publisher: "0xHoneyJar"

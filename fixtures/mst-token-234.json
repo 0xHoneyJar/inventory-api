@@ -1,0 +1,26 @@
+{
+  "name": "MST #234",
+  "description": "Mibera Shadow Traits is an infinite collection of NFTs you can build yourself and mint.",
+  "image": "https://assets.0xhoneyjar.xyz/Mibera/generated/234.webp",
+  "attributes": [
+    { "trait_type": "background", "value": "no more walls" },
+    { "trait_type": "body", "value": "mahogany" },
+    { "trait_type": "earrings", "value": "experimental" },
+    { "trait_type": "eyebrows", "value": "intense" },
+    { "trait_type": "eyes", "value": "crossed leaf" },
+    { "trait_type": "face accessories", "value": "indian paint" },
+    { "trait_type": "glasses", "value": "black white sunglasses" },
+    { "trait_type": "hair", "value": "braided black" },
+    { "trait_type": "hats", "value": "spiral tribe" },
+    { "trait_type": "items", "value": "bong bear 43" },
+    { "trait_type": "mouth", "value": "queasy" },
+    { "trait_type": "shirts", "value": "maid" },
+    { "trait_type": "tattoos", "value": "from the full moon fell nokomis" },
+    { "trait_type": "sun", "value": "sagittarius" },
+    { "trait_type": "moon", "value": "pisces" },
+    { "trait_type": "rising", "value": "libra" },
+    { "trait_type": "drug", "value": "sakae naa" },
+    { "trait_type": "elements", "value": "earth" },
+    { "trait_type": "shadow ranking", "value": "indigo" }
+  ]
+}

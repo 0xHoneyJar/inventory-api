@@ -90,4 +90,25 @@ describe('getNftMetadata — Mibera Shadow (MST) sovereign path', () => {
     expect(err).toBeInstanceOf(Error);
     expect(err).not.toBeInstanceOf(NotFoundError);
   });
+
+  it('bounds the upstream fetch with an abort signal (timeout wiring)', async () => {
+    // A hung storage-api must not tie up an inventory-api request indefinitely:
+    // the resolver passes an AbortController signal so the timeout can cancel it.
+    let sawSignal = false;
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
+      sawSignal = init?.signal instanceof AbortSignal;
+      return new Response(JSON.stringify(mstFixture), { status: 200 });
+    });
+
+    await getNftMetadata(MST_CONTRACT, TOKEN_ID);
+    expect(sawSignal).toBe(true);
+  });
+
+  it('does NOT collapse a 429 (throttle) into NotFound — it is transient, not absent', async () => {
+    vi.stubGlobal('fetch', async () => new Response('', { status: 429 }));
+
+    const err = await getNftMetadata(MST_CONTRACT, TOKEN_ID).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(NotFoundError); // a rate-limit ≠ "token doesn't exist"
+  });
 });

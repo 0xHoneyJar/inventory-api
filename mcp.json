@@ -38,6 +38,20 @@
         "type": "object",
         "properties": {}
       }
+    },
+    {
+      "name": "getProfilePicture",
+      "description": "Get the best-available profile image URL for a wallet across registered collections (Mibera first); returns imageUrl: null when the wallet holds nothing renderable.",
+      "method": "GET",
+      "path": "/profile/:address",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "object"
+          }
+        }
+      }
     }
   ]
 }

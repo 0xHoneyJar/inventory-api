@@ -15,7 +15,12 @@
  */
 import { Hyper, ok, createError, type HyperError } from "@hyper/core";
 import { z } from "zod";
-import { getHoldings, getNftsForOwner, getNftMetadata } from "./inventory.js";
+import {
+  getHoldings,
+  getNftsForOwner,
+  getNftMetadata,
+  getProfilePicture,
+} from "./inventory.js";
 
 const MIBERA_CONTRACT = "0x6666397DFe9a8c469BF65dc744CB1C733416c420";
 const SAMPLE_HOLDER = "0x1111111111111111111111111111111111111111";
@@ -217,4 +222,58 @@ export const routes = new Hyper()
     },
     ({ params }) =>
       call(() => getNftMetadata(params.contract, params.tokenId)).then(ok),
+  )
+  .get(
+    "/profile/:address",
+    {
+      query: z.object({
+        contract: z
+          .string()
+          .optional()
+          .describe("Collection contract to resolve the pfp from (default: Mibera)."),
+      }),
+      throws: { 400: errorBody },
+      meta: {
+        name: "getProfilePicture",
+        tags: ["inventory"],
+        mcp: {
+          description:
+            "Get the best-available profile image URL for a wallet across registered " +
+            "collections (Mibera first); returns imageUrl: null when the wallet holds " +
+            "nothing renderable.",
+        },
+        examples: [
+          {
+            name: "pfp for a holder",
+            input: { params: { address: SAMPLE_HOLDER } },
+            output: {
+              body: {
+                address: SAMPLE_HOLDER,
+                contract: MIBERA_CONTRACT,
+                imageUrl: "https://assets.0xhoneyjar.xyz/.../1.png",
+              },
+            },
+          },
+          {
+            name: "pfp for a wallet that holds nothing renderable",
+            input: { params: { address: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" } },
+            output: {
+              body: {
+                address: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+                contract: MIBERA_CONTRACT,
+                imageUrl: null,
+              },
+            },
+          },
+        ],
+      },
+    },
+    ({ params, query }) => {
+      const contract = query.contract ?? MIBERA_CONTRACT;
+      const options: { contract?: string } = {};
+      if (query.contract) options.contract = query.contract;
+      return call(() => getProfilePicture(params.address, options)).then((imageUrl) =>
+        ok({ address: params.address, contract, imageUrl }),
+      );
+    },
   );

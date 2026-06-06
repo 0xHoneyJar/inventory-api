@@ -303,6 +303,76 @@
           }
         }
       }
+    },
+    "/profile/{address}": {
+      "get": {
+        "operationId": "getProfilePicture",
+        "tags": [
+          "inventory"
+        ],
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "contract",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "address": "0x1111111111111111111111111111111111111111",
+                  "contract": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+                  "imageUrl": "https://assets.0xhoneyjar.xyz/.../1.png"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "declared error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "number"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

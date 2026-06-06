@@ -76,8 +76,25 @@ function toOpenApiPath(path: string): string {
 
 function buildOperation(r: Route, converters: readonly SchemaConverter[]): OpenAPIOperation {
   const parameters: OpenAPIParam[] = []
+  // Local edit (source-distributed component): when a route declares a `params`
+  // zod object, attach each property's converted JSON Schema to the matching
+  // path parameter. OAS 3.1 §4.8.12 requires every parameter to carry a
+  // `schema`; without this a path param emitted from the path string alone is
+  // schema-less and the spec is invalid. Mirrors the `r.query` branch below.
+  // Routes that don't declare `params` keep the bare {name,in,required} shape
+  // (back-compat — no behavior change for them).
+  let paramSchemas: Record<string, JsonSchema> = {}
+  if (r.params) {
+    const conv = firstConverter(converters, r.params)
+    const js = conv.toJsonSchema(r.params)
+    if (js.type === "object" && typeof js.properties === "object" && js.properties) {
+      paramSchemas = js.properties as Record<string, JsonSchema>
+    }
+  }
   for (const match of r.path.matchAll(PATH_PARAM)) {
-    parameters.push({ name: match[1]!, in: "path", required: true })
+    const name = match[1]!
+    const sub = paramSchemas[name]
+    parameters.push({ name, in: "path", required: true, ...(sub && { schema: sub }) })
   }
   if (r.query) {
     const conv = firstConverter(converters, r.query)

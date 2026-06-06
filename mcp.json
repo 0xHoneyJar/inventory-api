@@ -47,6 +47,9 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "params": {
+            "type": "object"
+          },
           "query": {
             "type": "object"
           }

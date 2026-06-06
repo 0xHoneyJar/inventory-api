@@ -57,12 +57,18 @@ async function call<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-// Declared error shape (projected into OpenAPI 4xx responses).
+// Declared error shape (projected into OpenAPI 4xx responses). `code` is
+// required, not optional: every declared 4xx body carries one. The domain path
+// (toHyperError) sets a `.code` for both the 400 (INVENTORY_INVALID_INPUT) and
+// 404 (INVENTORY_NOT_FOUND) cases, and Hyper's own input-validation 400 sets
+// `code: "validation_failed"` (src/hyper/core/app.ts schemaToHyperError). There
+// is no declared-4xx path that omits it, so marking it optional under-specified
+// the contract for code-gen consumers.
 const errorBody = z.object({
   error: z.object({
     status: z.number(),
     message: z.string(),
-    code: z.string().optional(),
+    code: z.string(),
   }),
 });
 
@@ -226,6 +232,13 @@ export const routes = new Hyper()
   .get(
     "/profile/:address",
     {
+      // Declare the path param schema (the other routes leave path params
+      // implicit). This gives the route router-level shape validation for
+      // `:address` AND lets the OpenAPI generator emit a `schema` for the path
+      // parameter (OAS 3.1 §4.8.12 requires every parameter to carry one).
+      params: z.object({
+        address: z.string().describe("0x-prefixed wallet address"),
+      }),
       query: z.object({
         contract: z
           .string()

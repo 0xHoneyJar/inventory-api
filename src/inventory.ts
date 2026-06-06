@@ -175,6 +175,13 @@ export async function getNftsForOwner(
 ): Promise<NFTCollection> {
   const checksummedAddress = validateAddress(address, "address");
   const checksummedContract = validateAddress(contract, "contract");
+  // A well-formed-but-unregistered contract is a client input error (400), not
+  // an internal fault (500). Guard against METADATA_REGISTRY up front so the
+  // request fails fast with a safe ValidationError message instead of surfacing
+  // an internal "No collection meta for ..." down in getCollectionMeta.
+  if (!METADATA_REGISTRY[checksummedContract]) {
+    throw new ValidationError("contract", contract, "registered collection address");
+  }
   const chainId = MIBERA_CHAIN_ID;
 
   // Resolve owner -> tokenIds. In live mode the sonar `Token` index is the

@@ -113,15 +113,29 @@ function buildOperation(r: Route, converters: readonly SchemaConverter[]): OpenA
   const responseExamples = buildResponseExamples(
     r.meta.examples as readonly RouteExample[] | undefined,
   )
+  // Local edit (source-distributed component): a route may declare a formal 200
+  // response schema via `meta.responseSchema` (a raw JSON Schema fragment). This
+  // is required for fields the example set alone can't express — e.g. a nullable
+  // field where buildResponseExamples picks only the first matching example and
+  // silently drops the null variant, so a code-gen consumer would infer a
+  // non-null type. When present, the schema is emitted alongside the example so
+  // the drift-CI anchor binds the declared shape, not just one positive case.
+  const responseSchema = r.meta.responseSchema as JsonSchema | undefined
+  const okContent =
+    responseSchema !== undefined || responseExamples !== undefined
+      ? {
+          content: {
+            "application/json": {
+              ...(responseSchema !== undefined && { schema: responseSchema }),
+              ...(responseExamples !== undefined && { example: responseExamples }),
+            },
+          },
+        }
+      : {}
   const responses: OpenAPIOperation["responses"] = {
     "200": {
       description: "success",
-      // Local edit (source-distributed component): `Boolean(...)` guard so the
-      // spread sees a clean `false | {object}` union (buildResponseExamples
-      // returns `unknown`, which TS won't spread directly — TS2698).
-      ...(responseExamples !== undefined && {
-        content: { "application/json": { example: responseExamples } },
-      }),
+      ...okContent,
     },
   }
 

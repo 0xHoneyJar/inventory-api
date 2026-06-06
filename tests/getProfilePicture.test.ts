@@ -21,4 +21,11 @@ describe('getProfilePicture', () => {
   it('rejects an invalid address (same guard as getNftsForOwner)', async () => {
     await expect(getProfilePicture('not-an-address')).rejects.toThrow();
   });
+
+  it('rejects a well-formed-but-unregistered contract with a typed INVENTORY_INVALID_INPUT error', async () => {
+    const UNREGISTERED = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+    await expect(
+      getProfilePicture(ADDR_WITH_MANY, { contract: UNREGISTERED }),
+    ).rejects.toMatchObject({ code: 'INVENTORY_INVALID_INPUT' });
+  });
 });

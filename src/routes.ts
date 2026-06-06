@@ -236,6 +236,20 @@ export const routes = new Hyper()
       meta: {
         name: "getProfilePicture",
         tags: ["inventory"],
+        // Formal 200 response schema (OpenAPI 3.1). The example set alone can't
+        // express imageUrl's nullability — buildResponseExamples emits only the
+        // first matching example, dropping the null variant — so a code-gen
+        // consumer would wrongly infer imageUrl: string. Declaring the schema
+        // here binds imageUrl as string|null in the drift-CI anchor.
+        responseSchema: {
+          type: "object",
+          properties: {
+            address: { type: "string" },
+            contract: { type: "string" },
+            imageUrl: { type: ["string", "null"] },
+          },
+          required: ["address", "contract", "imageUrl"],
+        },
         mcp: {
           description:
             "Get the best-available profile image URL for a wallet across registered " +
@@ -269,10 +283,12 @@ export const routes = new Hyper()
       },
     },
     ({ params, query }) => {
-      const contract = query.contract ?? MIBERA_CONTRACT;
-      const options: { contract?: string } = {};
-      if (query.contract) options.contract = query.contract;
-      return call(() => getProfilePicture(params.address, options)).then((imageUrl) =>
+      // Single source of truth for the resolved contract. Falsy coalescing (||)
+      // so an empty-string ?contract= falls through to the default — matching
+      // what the domain fn actually resolves — instead of `?? `letting "" lie in
+      // the envelope while the domain silently defaults to Mibera.
+      const contract = query.contract || MIBERA_CONTRACT;
+      return call(() => getProfilePicture(params.address, { contract })).then((imageUrl) =>
         ok({ address: params.address, contract, imageUrl }),
       );
     },

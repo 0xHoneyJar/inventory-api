@@ -1,19 +1,23 @@
-// Sovereign MST (Mibera Shadow) metadata resolver.
+// Sovereign metadata resolver (collection-parameterized).
 //
-// Mirrors `@freeside-storage/client`'s
-//   lookupSovereignManifest({ world: "mibera", collection: "mst", tokenId })
-// i.e. the sovereign url-contract for Mibera Shadow tokens. That client package is
-// private/workspace-only and pulls `effect`, so per the coordinator decision we
-// mirror the governed route locally rather than vendor it (zero new runtime deps;
-// global `fetch` only, the same primitive used in src/live-sonar.ts).
+// Resolves a token's metadata from the sovereign storage-api URL contract:
+//   https://metadata.0xhoneyjar.xyz/mibera/{collectionSlug}/{tokenId}
 //
-// The route is governed by the storage-api URL contract (shipped 2026-05-01,
-// "mst-sovereign-cutover"; semver + 90d-deprecation). If the route ever moves,
-// keep this module in sync with that contract.
+// This is the governed sovereign route (shipped 2026-05-01, "mst-sovereign-cutover";
+// semver + 90d-deprecation). It mirrors `@freeside-storage/client`'s
+//   lookupSovereignManifest({ world: "mibera", collection, tokenId })
+// — that client package is private/workspace-only and pulls `effect`, so per the
+// coordinator decision we mirror the governed route locally rather than vendor it
+// (zero new runtime deps; global `fetch` only, the same primitive used in
+// src/live-sonar.ts). If the route ever moves, keep this module in sync with the
+// storage-api URL contract.
 //
-// Scope: MST metadata source is this SOVEREIGN storage-api route ONLY — no chain
+// Scope: the sovereign metadata source is this storage-api route ONLY — no chain
 // RPC, no tokenURI, no sonar GraphQL, no honeyroad. The live JSON shape is already
 // `{ name, description, image, attributes: [{ trait_type, value }] }` (verified live).
+//
+// One slug per sovereign collection (e.g. "mst", "candies"). Adding a collection is
+// a registry row in src/inventory.ts (slug + contract) — NOT a new function here.
 
 import { NotFoundError, ValidationError } from "./errors.js";
 import type { Attribute, MetadataDocument } from "../types.js";
@@ -28,11 +32,31 @@ const METADATA_FETCH_TIMEOUT_MS = Number(
   process.env.METADATA_FETCH_TIMEOUT_MS ?? 8000
 );
 
-/** Sovereign storage-api URL for an MST (Mibera Shadow) token's metadata. */
+// Sovereign collection slugs must be a stable, path-safe identifier (the slug is a
+// URL path component). Constrain it so a malformed/hostile slug can't escape the
+// route. Registered slugs today: "mst", "candies".
+const SLUG_RE = /^[a-z0-9-]+$/;
+
+/** Sovereign storage-api URL for a token's metadata in a given collection. */
+export function sovereignMetadataUrl(
+  collectionSlug: string,
+  tokenId: string
+): string {
+  if (!SLUG_RE.test(collectionSlug)) {
+    throw new ValidationError("collectionSlug", collectionSlug, "lowercase slug [a-z0-9-]");
+  }
+  // Caller (getNftMetadata) already validates tokenId `^\d+$`, but encode both
+  // path components defensively so this helper is safe in isolation (no
+  // path-injection if reused elsewhere).
+  return `${METADATA_BASE}/mibera/${encodeURIComponent(collectionSlug)}/${encodeURIComponent(tokenId)}`;
+}
+
+/**
+ * Sovereign storage-api URL for an MST (Mibera Shadow) token's metadata.
+ * Back-compat thin alias — MST is the sovereign slug "mst".
+ */
 export function mstMetadataUrl(tokenId: string): string {
-  // Caller (getNftMetadata) already validates `^\d+$`, but encode defensively so
-  // this helper is safe in isolation (no path-injection if reused elsewhere).
-  return `${METADATA_BASE}/mibera/mst/${encodeURIComponent(tokenId)}`;
+  return sovereignMetadataUrl("mst", tokenId);
 }
 
 // Cap mapped attributes — a buggy/hostile upstream returning a giant array must
@@ -46,23 +70,30 @@ function mapAttributes(raw: unknown): Attribute[] {
     const a = (entry ?? {}) as { trait_type?: unknown; value?: unknown };
     return {
       trait_type: String(a.trait_type ?? ""),
+      // The sovereign contract permits string|number values; the public
+      // MetadataDocument.Attribute.value is a string, so coerce (e.g. a numeric
+      // candies "Price" trait becomes its string form). Same coercion MST used.
       value: String(a.value ?? ""),
     };
   });
 }
 
 /**
- * Resolve MST (Mibera Shadow) metadata from the sovereign storage-api.
+ * Resolve a token's metadata from the sovereign storage-api, by collection slug.
  *
  * - 403 (unminted) / 404 (absent): throws NotFoundError, mirroring the existing
- *   not-found semantics so callers treat an unminted/absent MST token the same as
- *   a missing codex token.
+ *   not-found semantics so callers treat an unminted/absent sovereign token the
+ *   same as a missing codex token.
  * - other 4xx (401/429/…) / 5xx / network failure / timeout: throws a clear error
  *   (NOT swallowed here — the downstream consumer fail-softs to imageless). A
  *   throttle or auth blip is NOT collapsed into "token not found".
  * - 200: parses JSON and maps to the plain MetadataDocument interface, defensively.
+ *
+ * `contract` is carried through only to populate NotFoundError (caller-facing
+ * identity); the route itself is keyed by `collectionSlug`.
  */
-export async function fetchMstMetadata(
+export async function fetchSovereignMetadata(
+  collectionSlug: string,
   contract: string,
   tokenId: string
 ): Promise<MetadataDocument> {
@@ -71,7 +102,8 @@ export async function fetchMstMetadata(
   if (!/^\d+$/.test(tokenId)) {
     throw new ValidationError("tokenId", tokenId, "numeric string");
   }
-  const url = mstMetadataUrl(tokenId);
+  // sovereignMetadataUrl validates the slug (throws ValidationError on a bad one).
+  const url = sovereignMetadataUrl(collectionSlug, tokenId);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), METADATA_FETCH_TIMEOUT_MS);
   try {
@@ -82,7 +114,7 @@ export async function fetchMstMetadata(
       // Network failure OR timeout-abort both land here (AbortError on timeout) —
       // surfaced as a clear throw; the downstream consumer fail-softs to imageless.
       throw new Error(
-        `MST metadata fetch failed for token ${tokenId} (${url}): ${String(cause)}`
+        `sovereign metadata fetch failed for ${collectionSlug} token ${tokenId} (${url}): ${String(cause)}`
       );
     }
 
@@ -94,7 +126,7 @@ export async function fetchMstMetadata(
         throw new NotFoundError(tokenId, contract);
       }
       throw new Error(
-        `MST metadata fetch returned HTTP ${res.status} for token ${tokenId} (${url})`
+        `sovereign metadata fetch returned HTTP ${res.status} for ${collectionSlug} token ${tokenId} (${url})`
       );
     }
 
@@ -108,7 +140,7 @@ export async function fetchMstMetadata(
       json = (await res.json()) as typeof json;
     } catch (cause) {
       throw new Error(
-        `MST metadata JSON parse failed for token ${tokenId} (${url}): ${String(cause)}`
+        `sovereign metadata JSON parse failed for ${collectionSlug} token ${tokenId} (${url}): ${String(cause)}`
       );
     }
 
@@ -121,4 +153,16 @@ export async function fetchMstMetadata(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Resolve MST (Mibera Shadow) metadata from the sovereign storage-api.
+ * Back-compat thin alias — MST is the sovereign slug "mst". Behavior is identical
+ * to the pre-generalization `fetchMstMetadata` (same timeout/abort/error-mapping/cap).
+ */
+export async function fetchMstMetadata(
+  contract: string,
+  tokenId: string
+): Promise<MetadataDocument> {
+  return fetchSovereignMetadata("mst", contract, tokenId);
 }

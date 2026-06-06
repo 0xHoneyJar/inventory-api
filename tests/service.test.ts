@@ -126,12 +126,17 @@ describe("OpenAPI 3.1 surface", () => {
 });
 
 describe("MCP surface", () => {
-  it("serves /.well-known/mcp.json with the 3 tools", async () => {
+  it("serves /.well-known/mcp.json with the 4 tools", async () => {
     const res = await get("/.well-known/mcp.json");
     expect(res.status).toBe(200);
     const manifest = await res.json();
     const names = manifest.tools.map((t: { name: string }) => t.name).sort();
-    expect(names).toEqual(["getHoldings", "getNftMetadata", "getNftsForOwner"]);
+    expect(names).toEqual([
+      "getHoldings",
+      "getNftMetadata",
+      "getNftsForOwner",
+      "getProfilePicture",
+    ]);
   });
 
   it("POST /mcp tools/list returns the tools (JSON-RPC)", async () => {
@@ -157,6 +162,6 @@ describe("MCP surface", () => {
 
   it("buildMCPManifest matches the served manifest", async () => {
     const manifest = buildMCPManifest();
-    expect(manifest.tools).toHaveLength(3);
+    expect(manifest.tools).toHaveLength(4);
   });
 });

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { toChecksumAddress } from "./address.js";
-import { FixtureLoadError } from "./errors.js";
+import { FixtureLoadError, ValidationError } from "./errors.js";
 import type { CodexRecord, GrailRecord, CollectionMeta } from "./types-internal.js";
 
 interface CodexFixture {
@@ -83,6 +83,12 @@ export function getImageUrl(tokenId: string): string | null {
 
 export function getCollectionMeta(contractAddress: string): CollectionMeta {
   const meta = collectionMetaByAddr.get(toChecksumAddress(contractAddress));
-  if (!meta) throw new Error(`No collection meta for ${contractAddress}`);
+  // A caller-supplied contract that isn't a registered collection is a client
+  // input error (400), not an internal fault (500). Throw a typed ValidationError
+  // (code INVENTORY_INVALID_INPUT) so toHyperError maps it to 400 with a safe
+  // message and no internal-state leakage.
+  if (!meta) {
+    throw new ValidationError("contract", contractAddress, "registered collection address");
+  }
   return meta;
 }

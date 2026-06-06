@@ -15,7 +15,12 @@
  */
 import { Hyper, ok, createError, type HyperError } from "@hyper/core";
 import { z } from "zod";
-import { getHoldings, getNftsForOwner, getNftMetadata } from "./inventory.js";
+import {
+  getHoldings,
+  getNftsForOwner,
+  getNftMetadata,
+  getProfilePicture,
+} from "./inventory.js";
 
 const MIBERA_CONTRACT = "0x6666397DFe9a8c469BF65dc744CB1C733416c420";
 const SAMPLE_HOLDER = "0x1111111111111111111111111111111111111111";
@@ -52,12 +57,18 @@ async function call<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-// Declared error shape (projected into OpenAPI 4xx responses).
+// Declared error shape (projected into OpenAPI 4xx responses). `code` is
+// required, not optional: every declared 4xx body carries one. The domain path
+// (toHyperError) sets a `.code` for both the 400 (INVENTORY_INVALID_INPUT) and
+// 404 (INVENTORY_NOT_FOUND) cases, and Hyper's own input-validation 400 sets
+// `code: "validation_failed"` (src/hyper/core/app.ts schemaToHyperError). There
+// is no declared-4xx path that omits it, so marking it optional under-specified
+// the contract for code-gen consumers.
 const errorBody = z.object({
   error: z.object({
     status: z.number(),
     message: z.string(),
-    code: z.string().optional(),
+    code: z.string(),
   }),
 });
 
@@ -217,4 +228,81 @@ export const routes = new Hyper()
     },
     ({ params }) =>
       call(() => getNftMetadata(params.contract, params.tokenId)).then(ok),
+  )
+  .get(
+    "/profile/:address",
+    {
+      // Declare the path param schema (the other routes leave path params
+      // implicit). This gives the route router-level shape validation for
+      // `:address` AND lets the OpenAPI generator emit a `schema` for the path
+      // parameter (OAS 3.1 §4.8.12 requires every parameter to carry one).
+      params: z.object({
+        address: z.string().describe("0x-prefixed wallet address"),
+      }),
+      query: z.object({
+        contract: z
+          .string()
+          .optional()
+          .describe("Collection contract to resolve the pfp from (default: Mibera)."),
+      }),
+      throws: { 400: errorBody },
+      meta: {
+        name: "getProfilePicture",
+        tags: ["inventory"],
+        // Formal 200 response schema (OpenAPI 3.1). The example set alone can't
+        // express imageUrl's nullability — buildResponseExamples emits only the
+        // first matching example, dropping the null variant — so a code-gen
+        // consumer would wrongly infer imageUrl: string. Declaring the schema
+        // here binds imageUrl as string|null in the drift-CI anchor.
+        responseSchema: {
+          type: "object",
+          properties: {
+            address: { type: "string" },
+            contract: { type: "string" },
+            imageUrl: { type: ["string", "null"] },
+          },
+          required: ["address", "contract", "imageUrl"],
+        },
+        mcp: {
+          description:
+            "Get the best-available profile image URL for a wallet across registered " +
+            "collections (Mibera first); returns imageUrl: null when the wallet holds " +
+            "nothing renderable.",
+        },
+        examples: [
+          {
+            name: "pfp for a holder",
+            input: { params: { address: SAMPLE_HOLDER } },
+            output: {
+              body: {
+                address: SAMPLE_HOLDER,
+                contract: MIBERA_CONTRACT,
+                imageUrl: "https://assets.0xhoneyjar.xyz/.../1.png",
+              },
+            },
+          },
+          {
+            name: "pfp for a wallet that holds nothing renderable",
+            input: { params: { address: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" } },
+            output: {
+              body: {
+                address: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+                contract: MIBERA_CONTRACT,
+                imageUrl: null,
+              },
+            },
+          },
+        ],
+      },
+    },
+    ({ params, query }) => {
+      // Single source of truth for the resolved contract. Falsy coalescing (||)
+      // so an empty-string ?contract= falls through to the default — matching
+      // what the domain fn actually resolves — instead of `?? `letting "" lie in
+      // the envelope while the domain silently defaults to Mibera.
+      const contract = query.contract || MIBERA_CONTRACT;
+      return call(() => getProfilePicture(params.address, { contract })).then((imageUrl) =>
+        ok({ address: params.address, contract, imageUrl }),
+      );
+    },
   );

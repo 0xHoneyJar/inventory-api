@@ -144,6 +144,7 @@ export {
 export type {
   ClientManifest,
   MCPManifest,
+  MCPSchemaConverter,
   MCPTool,
   OpenAPIManifest,
   OpenAPIManifestConfig,

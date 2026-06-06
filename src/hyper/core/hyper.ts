@@ -620,8 +620,10 @@ export class Hyper<Ctx extends AppContext = AppContext> {
   toOpenAPI(cfg?: Parameters<HyperApp["toOpenAPI"]>[0]): ReturnType<HyperApp["toOpenAPI"]> {
     return this.build().toOpenAPI(cfg)
   }
-  toMCPManifest(): ReturnType<HyperApp["toMCPManifest"]> {
-    return this.build().toMCPManifest()
+  toMCPManifest(
+    converter?: Parameters<HyperApp["toMCPManifest"]>[0],
+  ): ReturnType<HyperApp["toMCPManifest"]> {
+    return this.build().toMCPManifest(converter)
   }
   toClientManifest(): ReturnType<HyperApp["toClientManifest"]> {
     return this.build().toClientManifest()

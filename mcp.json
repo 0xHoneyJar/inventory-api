@@ -10,7 +10,15 @@
         "type": "object",
         "properties": {
           "query": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "contracts": {
+                "type": "string"
+              },
+              "chains": {
+                "type": "string"
+              }
+            }
           }
         }
       }
@@ -24,7 +32,15 @@
         "type": "object",
         "properties": {
           "query": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "pageSize": {
+                "type": "number"
+              },
+              "pageKey": {
+                "type": "string"
+              }
+            }
           }
         }
       }
@@ -37,6 +53,36 @@
       "inputSchema": {
         "type": "object",
         "properties": {}
+      }
+    },
+    {
+      "name": "getProfilePicture",
+      "description": "Get the best-available profile image URL for a wallet across registered collections (Mibera first); returns imageUrl: null when the wallet holds nothing renderable.",
+      "method": "GET",
+      "path": "/profile/:address",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "address"
+            ]
+          },
+          "query": {
+            "type": "object",
+            "properties": {
+              "contract": {
+                "type": "string"
+              }
+            }
+          }
+        }
       }
     }
   ]

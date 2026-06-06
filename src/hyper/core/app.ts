@@ -17,6 +17,7 @@ import { GroupBuilder, fromPlainRouter } from "./group.ts"
 import {
   type ClientManifest,
   type MCPManifest,
+  type MCPSchemaConverter,
   type OpenAPIManifest,
   type OpenAPIManifestConfig,
   toClientManifest,
@@ -193,7 +194,8 @@ export function app(config: AppConfig = {}): HyperApp {
 
   const toOpenAPIFn = (cfg: OpenAPIManifestConfig = {}): OpenAPIManifest =>
     toOpenAPI(allRoutes, cfg)
-  const toMCPFn = (): MCPManifest => toMCPManifest(allRoutes)
+  const toMCPFn = (converter?: MCPSchemaConverter): MCPManifest =>
+    toMCPManifest(allRoutes, converter)
   const toClientFn = (): ClientManifest => toClientManifest(allRoutes)
 
   const instance: HyperApp = {

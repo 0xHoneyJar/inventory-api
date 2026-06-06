@@ -39,15 +39,23 @@ export function buildOpenAPI(): OpenAPIDoc {
 
 /** The MCP tool manifest (meta.mcp routes only). */
 export function buildMCPManifest() {
-  return businessApp.toMCPManifest();
+  // Thread the zod converter so each tool's inputSchema carries the route's
+  // real path-param/query shape (e.g. getProfilePicture's required `address`
+  // path segment) — not a bare `{ type: "object" }` an MCP agent can't read.
+  return businessApp.toMCPManifest(zodConverter);
 }
 
 // OpenAPI 3.1 (+ Swagger UI) derived from the route declarations.
 const oa = openapiHandlers(businessApp, { ...OPENAPI_CONFIG, specUrl: "/openapi.json" });
 
 // MCP server (JSON-RPC) over the same route graph (meta.mcp routes only).
+// Pass the converter-threaded manifest explicitly so the SERVED surface
+// (GET /.well-known/mcp.json + POST /mcp tools/list) carries the same real
+// inputSchema as the emitted mcp.json drift anchor — otherwise the file would
+// declare `address` required while the live server reported a bare object.
 const mcp = mcpServer(businessApp, {
   info: { name: "inventory-api", version: "0.1.0" },
+  manifest: buildMCPManifest(),
 });
 
 // The served app: business routes + meta/discovery routes.

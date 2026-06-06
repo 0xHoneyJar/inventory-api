@@ -271,8 +271,15 @@ export interface HyperApp {
     version?: string
     description?: string
   }) => import("./projection.ts").OpenAPIManifest
-  /** MCP manifest. @hyper/mcp adds the transport. */
-  readonly toMCPManifest: () => import("./projection.ts").MCPManifest
+  /**
+   * MCP manifest. @hyper/mcp adds the transport. An optional schema converter
+   * (e.g. `zodConverter`) threads each route's declared `params`/`query` shape
+   * into the tool `inputSchema`; absent one, the bare `{ type: "object" }` stub
+   * is emitted (back-compat).
+   */
+  readonly toMCPManifest: (
+    converter?: import("./projection.ts").MCPSchemaConverter,
+  ) => import("./projection.ts").MCPManifest
   /** Client manifest. @hyper/client consumes this. */
   readonly toClientManifest: () => import("./projection.ts").ClientManifest
   /** Original AppConfig — used by `app.test()` to produce scoped clones. */

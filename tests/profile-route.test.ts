@@ -81,6 +81,11 @@ describe("OpenAPI 3.1 + MCP surface for /profile/:address", () => {
     const paramNames = (profile!.parameters ?? []).map((p) => p.name);
     expect(paramNames).toContain("address"); // path param
     expect(paramNames).toContain("contract"); // query param (from zod)
+    // The `address` path param MUST carry a `schema` (OAS 3.1 §4.8.12). Without
+    // it a code-gen consumer infers the param as untyped/any.
+    const addressParam = (profile!.parameters ?? []).find((p) => p.name === "address");
+    expect(addressParam).toBeDefined();
+    expect((addressParam as { schema?: { type?: unknown } }).schema?.type).toBe("string");
   });
 
   it("OpenAPI 200 declares imageUrl as string|null (the null variant is bound, not dropped)", async () => {
@@ -100,5 +105,23 @@ describe("OpenAPI 3.1 + MCP surface for /profile/:address", () => {
     const tool = manifest.tools.find((t: { name: string }) => t.name === "getProfilePicture");
     expect(tool).toBeDefined();
     expect(typeof tool!.description).toBe("string");
+  });
+
+  it("MCP inputSchema declares the required `address` path param (agent gets the schema signal)", async () => {
+    const manifest = buildMCPManifest();
+    const tool = manifest.tools.find((t: { name: string }) => t.name === "getProfilePicture");
+    const params = tool!.inputSchema.properties.params as {
+      type?: string;
+      properties?: Record<string, { type?: unknown }>;
+      required?: readonly string[];
+    };
+    // The :address path segment is a REQUIRED string — not a bare {type:"object"}
+    // stub an MCP agent can't read.
+    expect(params?.type).toBe("object");
+    expect(params?.properties?.address?.type).toBe("string");
+    expect(params?.required).toContain("address");
+    // The optional ?contract= query param must NOT be marked required.
+    const query = tool!.inputSchema.properties.query as { required?: readonly string[] };
+    expect(query?.required ?? []).not.toContain("contract");
   });
 });

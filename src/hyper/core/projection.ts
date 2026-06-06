@@ -163,10 +163,45 @@ export interface MCPTool {
   readonly inputSchema: {
     readonly type: "object"
     readonly properties: Record<string, unknown>
+    readonly required?: readonly string[]
   }
 }
 
-export function toMCPManifest(routes: readonly Route[]): MCPManifest {
+/**
+ * Minimal converter contract — the core layer stays free of a hard
+ * `@hyper/openapi` import (the schema converter lives there). A caller that
+ * has a real converter (e.g. `zodConverter` from `@hyper/openapi-zod`) threads
+ * it in so MCP `inputSchema` carries the route's actual param/query shape;
+ * absent one, the manifest keeps the legacy bare `{ type: "object" }` stub.
+ */
+export interface MCPSchemaConverter {
+  readonly canHandle: (s: unknown) => boolean
+  readonly toJsonSchema: (s: unknown) => Record<string, unknown>
+}
+
+/**
+ * Project a declared schema (path `params` or `query`) into a nested MCP
+ * `inputSchema` group. With a converter, emits the real object schema — inner
+ * property names + the `required` array — so an MCP agent sees that e.g. the
+ * `:address` path segment is a required string. Without one (or when the
+ * schema doesn't convert to an object), falls back to the bare
+ * `{ type: "object" }` stub the manifest emitted historically.
+ */
+function mcpSchemaGroup(
+  schema: unknown,
+  converter: MCPSchemaConverter | undefined,
+): Record<string, unknown> {
+  if (converter?.canHandle(schema)) {
+    const js = converter.toJsonSchema(schema)
+    if (js && js.type === "object") return js
+  }
+  return { type: "object" }
+}
+
+export function toMCPManifest(
+  routes: readonly Route[],
+  converter?: MCPSchemaConverter,
+): MCPManifest {
   const tools: MCPTool[] = []
   for (const r of routes) {
     if (r.meta.internal) continue
@@ -180,9 +215,9 @@ export function toMCPManifest(routes: readonly Route[]): MCPManifest {
       inputSchema: {
         type: "object",
         properties: {
-          ...(r.params ? { params: { type: "object" } } : {}),
-          ...(r.query ? { query: { type: "object" } } : {}),
-          ...(r.body ? { body: { type: "object" } } : {}),
+          ...(r.params ? { params: mcpSchemaGroup(r.params, converter) } : {}),
+          ...(r.query ? { query: mcpSchemaGroup(r.query, converter) } : {}),
+          ...(r.body ? { body: mcpSchemaGroup(r.body, converter) } : {}),
         },
       },
     })

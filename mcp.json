@@ -10,7 +10,15 @@
         "type": "object",
         "properties": {
           "query": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "contracts": {
+                "type": "string"
+              },
+              "chains": {
+                "type": "string"
+              }
+            }
           }
         }
       }
@@ -24,7 +32,15 @@
         "type": "object",
         "properties": {
           "query": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "pageSize": {
+                "type": "number"
+              },
+              "pageKey": {
+                "type": "string"
+              }
+            }
           }
         }
       }
@@ -48,10 +64,23 @@
         "type": "object",
         "properties": {
           "params": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "address"
+            ]
           },
           "query": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "contract": {
+                "type": "string"
+              }
+            }
           }
         }
       }

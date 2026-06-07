@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getHoldings, getNftsForOwner, getNftMetadata } from '../src/inventory.js';
 
 const MIBERA_CONTRACT = '0x6666397DFe9a8c469BF65dc744CB1C733416c420';
+// Mibera-main now resolves metadata via the sovereign route (a network fetch), so
+// the metadata no-network assertion runs against the codex path (unknown contract).
+const CODEX_CONTRACT = '0x000000000000000000000000000000000000C0DE';
 const ADDR_WITH_MANY = '0x1111111111111111111111111111111111111111';
 
 /**
@@ -30,9 +33,9 @@ describe('no-network: all data comes from fixtures', () => {
     ).resolves.toBeDefined();
   });
 
-  it('getNftMetadata does not make network calls', async () => {
+  it('getNftMetadata (codex path) does not make network calls', async () => {
     await expect(
-      getNftMetadata(MIBERA_CONTRACT, '1')
+      getNftMetadata(CODEX_CONTRACT, '1')
     ).resolves.toBeDefined();
   });
 

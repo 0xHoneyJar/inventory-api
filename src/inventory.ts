@@ -74,9 +74,14 @@ const FRACTURED_ADDRESSES = [
 // row (slug + contract), NOT a new strategy variant or function.
 type MetadataStrategy =
   | { kind: "codex" }
-  | { kind: "sovereign"; slug: string };
+  | { kind: "sovereign"; slug: string }
+  // The world's NAMESAKE collection (Mibera-main): sovereign storage-api under the
+  // `/mibera/{tokenId}` shape (no slug segment). Mibera-main is fully migrated to
+  // S3 (incl. grails, e.g. #7702 "Ethiopian"); the legacy codex was partial (404
+  // on high token ids), so we route the namesake to sovereign, not codex.
+  | { kind: "sovereign-world" };
 const METADATA_REGISTRY: Record<string, MetadataStrategy> = {
-  [toChecksumAddress(MIBERA_CONTRACT)]: { kind: "codex" },
+  [toChecksumAddress(MIBERA_CONTRACT)]: { kind: "sovereign-world" },
   [toChecksumAddress(MST_CONTRACT)]: { kind: "sovereign", slug: "mst" },
   [toChecksumAddress(CANDIES_CONTRACT)]: { kind: "sovereign", slug: "candies" },
   [toChecksumAddress(TAROT_CONTRACT)]: { kind: "sovereign", slug: "tarot" },
@@ -311,17 +316,24 @@ export async function getNftMetadata(
     throw new ValidationError("tokenId", tokenId, "numeric string");
   }
 
-  // Branch on the (checksummed) contract: Mibera-main resolves from the codex,
-  // sovereign collections (MST, Candies, …) from the storage-api route under their
-  // slug. Unknown contracts default to the codex path (preserves prior behavior:
-  // codex miss => NotFoundError).
+  // Branch on the (checksummed) contract: Mibera-main resolves from the sovereign
+  // NAMESAKE route (`/mibera/{tokenId}`), sibling sovereign collections (MST,
+  // Candies, …) from `/mibera/{slug}/{tokenId}`. Unknown contracts default to the
+  // legacy codex path (preserves prior behavior: codex miss => NotFoundError).
   const strategy = METADATA_REGISTRY[checksummedContract] ?? { kind: "codex" };
 
   if (strategy.kind === "sovereign") {
     return fetchSovereignMetadata(strategy.slug, checksummedContract, tokenId);
   }
 
-  // Mibera-main codex path (unchanged).
+  // The world's namesake collection (Mibera-main): sovereign `/mibera/{tokenId}`
+  // (null slug). Strictly better than the legacy codex, which 404'd on high token
+  // ids and lacked grail metadata — the S3 sovereign source carries all 10k + grails.
+  if (strategy.kind === "sovereign-world") {
+    return fetchSovereignMetadata(null, checksummedContract, tokenId);
+  }
+
+  // Codex path — only for UNKNOWN contracts now (defaulted to { kind: "codex" }).
   const record = codexClient.getToken(tokenId);
   if (!record) {
     throw new NotFoundError(tokenId, contract);

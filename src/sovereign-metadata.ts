@@ -39,11 +39,21 @@ const METADATA_FETCH_TIMEOUT_MS = Number(
 // route. Registered slugs today: "mst", "candies", "tarot", "gif", "fractures".
 const SLUG_RE = /^[a-z0-9-]+$/;
 
-/** Sovereign storage-api URL for a token's metadata in a given collection. */
+/**
+ * Sovereign storage-api URL for a token's metadata in a given collection.
+ *
+ * `collectionSlug === null` resolves the WORLD'S NAMESAKE collection (Mibera-main):
+ * the resolver's `/{world}/{tokenId}` shape — NO collection path segment, routed by
+ * the `mibera:current_version` KVS pointer (vs `mibera/{slug}:current_version` for
+ * siblings). A non-null slug is a sibling collection (mst, candies, …).
+ */
 export function sovereignMetadataUrl(
-  collectionSlug: string,
+  collectionSlug: string | null,
   tokenId: string
 ): string {
+  if (collectionSlug === null) {
+    return `${METADATA_BASE}/mibera/${encodeURIComponent(tokenId)}`;
+  }
   if (!SLUG_RE.test(collectionSlug)) {
     throw new ValidationError("collectionSlug", collectionSlug, "lowercase slug [a-z0-9-]");
   }
@@ -95,7 +105,7 @@ function mapAttributes(raw: unknown): Attribute[] {
  * identity); the route itself is keyed by `collectionSlug`.
  */
 export async function fetchSovereignMetadata(
-  collectionSlug: string,
+  collectionSlug: string | null,
   contract: string,
   tokenId: string
 ): Promise<MetadataDocument> {
@@ -104,6 +114,8 @@ export async function fetchSovereignMetadata(
   if (!/^\d+$/.test(tokenId)) {
     throw new ValidationError("tokenId", tokenId, "numeric string");
   }
+  // Human label for error messages (null slug === the "mibera" namesake collection).
+  const label = collectionSlug ?? "mibera";
   // sovereignMetadataUrl validates the slug (throws ValidationError on a bad one).
   const url = sovereignMetadataUrl(collectionSlug, tokenId);
   const controller = new AbortController();
@@ -116,7 +128,7 @@ export async function fetchSovereignMetadata(
       // Network failure OR timeout-abort both land here (AbortError on timeout) —
       // surfaced as a clear throw; the downstream consumer fail-softs to imageless.
       throw new Error(
-        `sovereign metadata fetch failed for ${collectionSlug} token ${tokenId} (${url}): ${String(cause)}`
+        `sovereign metadata fetch failed for ${label} token ${tokenId} (${url}): ${String(cause)}`
       );
     }
 
@@ -128,7 +140,7 @@ export async function fetchSovereignMetadata(
         throw new NotFoundError(tokenId, contract);
       }
       throw new Error(
-        `sovereign metadata fetch returned HTTP ${res.status} for ${collectionSlug} token ${tokenId} (${url})`
+        `sovereign metadata fetch returned HTTP ${res.status} for ${label} token ${tokenId} (${url})`
       );
     }
 
@@ -142,7 +154,7 @@ export async function fetchSovereignMetadata(
       json = (await res.json()) as typeof json;
     } catch (cause) {
       throw new Error(
-        `sovereign metadata JSON parse failed for ${collectionSlug} token ${tokenId} (${url}): ${String(cause)}`
+        `sovereign metadata JSON parse failed for ${label} token ${tokenId} (${url}): ${String(cause)}`
       );
     }
 

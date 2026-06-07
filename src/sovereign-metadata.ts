@@ -34,7 +34,7 @@ const METADATA_FETCH_TIMEOUT_MS = Number(
 
 // Sovereign collection slugs must be a stable, path-safe identifier (the slug is a
 // URL path component). Constrain it so a malformed/hostile slug can't escape the
-// route. Registered slugs today: "mst", "candies".
+// route. Registered slugs today: "mst", "candies", "tarot".
 const SLUG_RE = /^[a-z0-9-]+$/;
 
 /** Sovereign storage-api URL for a token's metadata in a given collection. */

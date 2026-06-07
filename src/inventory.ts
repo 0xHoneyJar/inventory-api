@@ -38,6 +38,14 @@ const CANDIES_CONTRACT = "0xecA03517c5195F1edD634DA6D690D6c72407c40c";
 // sovereign host owns the normalized JSON.
 const TAROT_CONTRACT = "0x4B08a069381EfbB9f08C73D6B2e975C9BE3c4684";
 
+// Mibera Reveal GIF — chain 80094. Metadata resolves via the SOVEREIGN storage-api
+// route under the "gif" slug (tokenId === gif_metadata.tokenid; 347 tokens). The
+// sovereign JSON carries { name, description, image } with NO attributes — the GIF
+// has none — so the generic resolver's mapAttributes naturally yields []. The image
+// is the sovereign host (https://assets.0xhoneyjar.xyz/Mibera/gif/{tokenId}.gif),
+// normalized off the legacy d163 CloudFront the old gif metadata stored.
+const GIF_CONTRACT = "0x230945E0Ed56EF4dE871a6c0695De265DE23D8D8";
+
 // Contract → metadata resolution strategy. Keyed by EIP-55 checksum address so the
 // lookup is checksum-consistent (never raw-case string compare). A sovereign
 // collection is `{ kind: "sovereign", slug }` — adding one is a single registry
@@ -50,6 +58,7 @@ const METADATA_REGISTRY: Record<string, MetadataStrategy> = {
   [toChecksumAddress(MST_CONTRACT)]: { kind: "sovereign", slug: "mst" },
   [toChecksumAddress(CANDIES_CONTRACT)]: { kind: "sovereign", slug: "candies" },
   [toChecksumAddress(TAROT_CONTRACT)]: { kind: "sovereign", slug: "tarot" },
+  [toChecksumAddress(GIF_CONTRACT)]: { kind: "sovereign", slug: "gif" },
 };
 
 function validateAddress(address: string, field: string): string {

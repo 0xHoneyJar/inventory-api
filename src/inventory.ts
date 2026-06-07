@@ -46,6 +46,28 @@ const TAROT_CONTRACT = "0x4B08a069381EfbB9f08C73D6B2e975C9BE3c4684";
 // normalized off the legacy d163 CloudFront the old gif metadata stored.
 const GIF_CONTRACT = "0x230945E0Ed56EF4dE871a6c0695De265DE23D8D8";
 
+// Fractures (Mibera "Fractured" set) — chain 80094. TEN contracts (parcels,
+// miladies, reveal_phase1..8 — see honeyroad lib/fractures.ts FRACTURED_ADDRESSES),
+// ALL routed to the SINGLE sovereign slug "fractures" (10,000 tokens total). The
+// canonical source is the Postgres fracture_expanded table (codex/Mibera shape:
+// flattened trait columns → attributes), surfaced as the same sovereign JSON
+// contract `{ name, description, image, attributes: [{ trait_type, value }] }`.
+// Routing is by CONTRACT ADDRESS → one slug, so any of the ten contracts resolves
+// to the same metadata.0xhoneyjar.xyz/mibera/fractures/{tokenId} path — no per-token
+// phase resolution (fracture_expanded.image is always the phase-1 image hash).
+const FRACTURED_ADDRESSES = [
+  "0x86Db98cf1b81E833447b12a077ac28c36b75c8E1", // miparcels
+  "0x8D4972bd5D2df474e71da6676a365fB549853991", // miladies
+  "0x144B27b1A267eE71989664b3907030Da84cc4754", // mireveal #1.1
+  "0x72DB992E18a1bf38111B1936DD723E82D0D96313", // mireveal #2.2
+  "0x3A00301B713be83EC54B7B4Fb0f86397d087E6d3", // mireveal #3.3
+  "0x419F25C4f9A9c730AAcf58b8401B5b3e566Fe886", // mireveal #4.20
+  "0x81A27117bd894942BA6737402fB9e57e942C6058", // mireveal #5.5
+  "0xaaB7b4502251aE393D0590bAB3e208E2d58F4813", // mireveal #6.9
+  "0xc64126EA8dC7626c16daA2A29D375C33fcaa4C7c", // mireveal #7.7
+  "0x24F4047d372139de8DACbe79e2fC576291Ec3ffc", // mireveal #8.8
+];
+
 // Contract → metadata resolution strategy. Keyed by EIP-55 checksum address so the
 // lookup is checksum-consistent (never raw-case string compare). A sovereign
 // collection is `{ kind: "sovereign", slug }` — adding one is a single registry
@@ -59,6 +81,14 @@ const METADATA_REGISTRY: Record<string, MetadataStrategy> = {
   [toChecksumAddress(CANDIES_CONTRACT)]: { kind: "sovereign", slug: "candies" },
   [toChecksumAddress(TAROT_CONTRACT)]: { kind: "sovereign", slug: "tarot" },
   [toChecksumAddress(GIF_CONTRACT)]: { kind: "sovereign", slug: "gif" },
+  // All ten Fractures contracts map to the SAME "fractures" slug — routing is by
+  // contract address, the slug is shared (one sovereign collection, 10 contracts).
+  ...Object.fromEntries(
+    FRACTURED_ADDRESSES.map((addr) => [
+      toChecksumAddress(addr),
+      { kind: "sovereign", slug: "fractures" } as MetadataStrategy,
+    ])
+  ),
 };
 
 function validateAddress(address: string, field: string): string {

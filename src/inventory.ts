@@ -30,6 +30,22 @@ const MST_CONTRACT = "0x048327a187b944ddac61c6e202bfccd20d17c008";
 // /api/metadata/drug/[id] route used; the sovereign host owns the JSON.
 const CANDIES_CONTRACT = "0xecA03517c5195F1edD634DA6D690D6c72407c40c";
 
+// Tarot / Archetype — chain 80094. Metadata resolves via the SOVEREIGN
+// storage-api route under the "tarot" slug (tokenId === quiz_metadata.tokenid,
+// the integer PK). The pre-formatted OpenSea-style doc comes from the
+// quiz_metadata.metadata JSONB column (legacy route: app/api/quiz/[tokenId]).
+// Images are already sovereign (S3 Mibera/quiz_archetypes/{tokenId}.webp); the
+// sovereign host owns the normalized JSON.
+const TAROT_CONTRACT = "0x4B08a069381EfbB9f08C73D6B2e975C9BE3c4684";
+
+// Mibera Reveal GIF — chain 80094. Metadata resolves via the SOVEREIGN storage-api
+// route under the "gif" slug (tokenId === gif_metadata.tokenid; 347 tokens). The
+// sovereign JSON carries { name, description, image } with NO attributes — the GIF
+// has none — so the generic resolver's mapAttributes naturally yields []. The image
+// is the sovereign host (https://assets.0xhoneyjar.xyz/Mibera/gif/{tokenId}.gif),
+// normalized off the legacy d163 CloudFront the old gif metadata stored.
+const GIF_CONTRACT = "0x230945E0Ed56EF4dE871a6c0695De265DE23D8D8";
+
 // Fractures (Mibera "Fractured" set) — chain 80094. TEN contracts (parcels,
 // miladies, reveal_phase1..8 — see honeyroad lib/fractures.ts FRACTURED_ADDRESSES),
 // ALL routed to the SINGLE sovereign slug "fractures" (10,000 tokens total). The
@@ -63,6 +79,8 @@ const METADATA_REGISTRY: Record<string, MetadataStrategy> = {
   [toChecksumAddress(MIBERA_CONTRACT)]: { kind: "codex" },
   [toChecksumAddress(MST_CONTRACT)]: { kind: "sovereign", slug: "mst" },
   [toChecksumAddress(CANDIES_CONTRACT)]: { kind: "sovereign", slug: "candies" },
+  [toChecksumAddress(TAROT_CONTRACT)]: { kind: "sovereign", slug: "tarot" },
+  [toChecksumAddress(GIF_CONTRACT)]: { kind: "sovereign", slug: "gif" },
   // All ten Fractures contracts map to the SAME "fractures" slug — routing is by
   // contract address, the slug is shared (one sovereign collection, 10 contracts).
   ...Object.fromEntries(

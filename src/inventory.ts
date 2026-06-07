@@ -6,7 +6,7 @@ import { buildEnvelope, buildEnvelopeLive } from "./completeness.js";
 import { applyPagination } from "./pagination.js";
 import { toChecksumAddress, isValidAddress } from "./address.js";
 import { ValidationError, NotFoundError } from "./errors.js";
-import { fetchMstMetadata } from "./sovereign-metadata.js";
+import { fetchSovereignMetadata } from "./sovereign-metadata.js";
 import type {
   HoldingsResponse,
   ContractHolding,
@@ -24,13 +24,23 @@ const MIBERA_COLLECTION_KEY = "mibera";
 // storage-api route (src/sovereign-metadata.ts), NOT the Mibera-main codex.
 const MST_CONTRACT = "0x048327a187b944ddac61c6e202bfccd20d17c008";
 
+// Candies (Mibera "Drugs") — ERC-1155, chain 80094. Metadata resolves via the
+// SOVEREIGN storage-api route under the "candies" slug (tokenId === honeyroad
+// listings.id). Normalized off the legacy d163 CloudFront the old
+// /api/metadata/drug/[id] route used; the sovereign host owns the JSON.
+const CANDIES_CONTRACT = "0xecA03517c5195F1edD634DA6D690D6c72407c40c";
+
 // Contract → metadata resolution strategy. Keyed by EIP-55 checksum address so the
-// lookup is checksum-consistent (never raw-case string compare). Add a row here to
-// support a new collection rather than growing an if/else chain.
-type MetadataStrategy = "codex" | "sovereign-mst";
+// lookup is checksum-consistent (never raw-case string compare). A sovereign
+// collection is `{ kind: "sovereign", slug }` — adding one is a single registry
+// row (slug + contract), NOT a new strategy variant or function.
+type MetadataStrategy =
+  | { kind: "codex" }
+  | { kind: "sovereign"; slug: string };
 const METADATA_REGISTRY: Record<string, MetadataStrategy> = {
-  [toChecksumAddress(MIBERA_CONTRACT)]: "codex",
-  [toChecksumAddress(MST_CONTRACT)]: "sovereign-mst",
+  [toChecksumAddress(MIBERA_CONTRACT)]: { kind: "codex" },
+  [toChecksumAddress(MST_CONTRACT)]: { kind: "sovereign", slug: "mst" },
+  [toChecksumAddress(CANDIES_CONTRACT)]: { kind: "sovereign", slug: "candies" },
 };
 
 function validateAddress(address: string, field: string): string {
@@ -254,12 +264,13 @@ export async function getNftMetadata(
   }
 
   // Branch on the (checksummed) contract: Mibera-main resolves from the codex,
-  // Mibera Shadow (MST) from the sovereign storage-api route. Unknown contracts
-  // default to the codex path (preserves prior behavior: codex miss => NotFoundError).
-  const strategy = METADATA_REGISTRY[checksummedContract] ?? "codex";
+  // sovereign collections (MST, Candies, …) from the storage-api route under their
+  // slug. Unknown contracts default to the codex path (preserves prior behavior:
+  // codex miss => NotFoundError).
+  const strategy = METADATA_REGISTRY[checksummedContract] ?? { kind: "codex" };
 
-  if (strategy === "sovereign-mst") {
-    return fetchMstMetadata(checksummedContract, tokenId);
+  if (strategy.kind === "sovereign") {
+    return fetchSovereignMetadata(strategy.slug, checksummedContract, tokenId);
   }
 
   // Mibera-main codex path (unchanged).

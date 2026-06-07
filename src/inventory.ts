@@ -30,6 +30,14 @@ const MST_CONTRACT = "0x048327a187b944ddac61c6e202bfccd20d17c008";
 // /api/metadata/drug/[id] route used; the sovereign host owns the JSON.
 const CANDIES_CONTRACT = "0xecA03517c5195F1edD634DA6D690D6c72407c40c";
 
+// Tarot / Archetype — chain 80094. Metadata resolves via the SOVEREIGN
+// storage-api route under the "tarot" slug (tokenId === quiz_metadata.tokenid,
+// the integer PK). The pre-formatted OpenSea-style doc comes from the
+// quiz_metadata.metadata JSONB column (legacy route: app/api/quiz/[tokenId]).
+// Images are already sovereign (S3 Mibera/quiz_archetypes/{tokenId}.webp); the
+// sovereign host owns the normalized JSON.
+const TAROT_CONTRACT = "0x4B08a069381EfbB9f08C73D6B2e975C9BE3c4684";
+
 // Contract → metadata resolution strategy. Keyed by EIP-55 checksum address so the
 // lookup is checksum-consistent (never raw-case string compare). A sovereign
 // collection is `{ kind: "sovereign", slug }` — adding one is a single registry
@@ -41,6 +49,7 @@ const METADATA_REGISTRY: Record<string, MetadataStrategy> = {
   [toChecksumAddress(MIBERA_CONTRACT)]: { kind: "codex" },
   [toChecksumAddress(MST_CONTRACT)]: { kind: "sovereign", slug: "mst" },
   [toChecksumAddress(CANDIES_CONTRACT)]: { kind: "sovereign", slug: "candies" },
+  [toChecksumAddress(TAROT_CONTRACT)]: { kind: "sovereign", slug: "tarot" },
 };
 
 function validateAddress(address: string, field: string): string {

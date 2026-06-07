@@ -173,15 +173,36 @@ export async function getHoldings(
       }
 
       if (count === 0) continue;
+      // ERC-1155 collections (Candies) carry no rows in the 721 `Token` index;
+      // their per-holder ownership lives in `CandiesHolderBalance` (sonar
+      // candies_holder_balance, populated once the green-belt reindex backfills
+      // it). Route candies to the balance query; everyone else uses the 721 path.
+      const isCandies =
+        contractAddress.toLowerCase() === CANDIES_CONTRACT.toLowerCase();
       let tokenIds: string[] = [];
       try {
-        tokenIds = await liveSonar.liveOwnerTokenIds(checksummedAddress, contractAddress);
+        if (isCandies) {
+          const balances = await liveSonar.liveCandiesBalances(checksummedAddress);
+          tokenIds = balances
+            .filter(
+              (b) => b.contract.toLowerCase() === contractAddress.toLowerCase()
+            )
+            .map((b) => b.tokenId);
+        } else {
+          tokenIds = await liveSonar.liveOwnerTokenIds(
+            checksummedAddress,
+            contractAddress
+          );
+        }
       } catch {
         // Per-token index unavailable (older belt / transient) — keep the real
         // count, leave tokenIds empty. Never let this fail the whole response.
         tokenIds = [];
       }
-      liveHoldings.push({ contractAddress, chainId, tokenCount: count, tokenIds });
+      // For candies the held-token count IS the number of balance rows; the
+      // Mibera-keyed `count` above is a 721 proxy that doesn't apply to 1155.
+      const tokenCount = isCandies ? tokenIds.length : count;
+      liveHoldings.push({ contractAddress, chainId, tokenCount, tokenIds });
     }
     return { holdings: liveHoldings, completeness };
   }

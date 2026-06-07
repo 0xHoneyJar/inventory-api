@@ -16,8 +16,10 @@
 // RPC, no tokenURI, no sonar GraphQL, no honeyroad. The live JSON shape is already
 // `{ name, description, image, attributes: [{ trait_type, value }] }` (verified live).
 //
-// One slug per sovereign collection (e.g. "mst", "candies"). Adding a collection is
-// a registry row in src/inventory.ts (slug + contract) — NOT a new function here.
+// One slug per sovereign collection (e.g. "mst", "candies", "fractures"). Adding a
+// collection is a registry row in src/inventory.ts (slug + contract) — NOT a new
+// function here. (A collection may register MORE THAN ONE contract under one slug,
+// e.g. "fractures" routes its ten contracts to a single slug.)
 
 import { NotFoundError, ValidationError } from "./errors.js";
 import type { Attribute, MetadataDocument } from "../types.js";
@@ -34,7 +36,7 @@ const METADATA_FETCH_TIMEOUT_MS = Number(
 
 // Sovereign collection slugs must be a stable, path-safe identifier (the slug is a
 // URL path component). Constrain it so a malformed/hostile slug can't escape the
-// route. Registered slugs today: "mst", "candies".
+// route. Registered slugs today: "mst", "candies", "fractures".
 const SLUG_RE = /^[a-z0-9-]+$/;
 
 /** Sovereign storage-api URL for a token's metadata in a given collection. */

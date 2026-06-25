@@ -73,7 +73,7 @@ is_not:
 # them at validation time. Same discipline as the identity-api beacon.
 
 composes_with:
-  freeside-sonar:
+  sonar-api:
     role: "Indexed read source: TrackedHolder (counts), Token (per-token ownership), chain_metadata (ACVP as_of_block)"
     tag: "SonarPort@1.0.0+0000000000000000"   # PLACEHOLDER — doctor recomputes
     required: true

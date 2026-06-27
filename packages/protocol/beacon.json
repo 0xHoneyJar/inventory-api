@@ -1,0 +1,90 @@
+{
+  "schema_version": "3",
+  "slug": "inventory-api",
+  "publisher": "0xHoneyJar",
+  "is": {
+    "one_liner": "Sovereign read-side inventory aggregator: ERC721 + ERC1155 holdings with ACVP completeness envelope",
+    "scope": [
+      "Resolve a wallet's holdings + per-token tokenIds for registered collections (Mibera first)",
+      "Join sonar-indexed ownership with locally-owned metadata (mibera-codex) on read",
+      "Attach an ACVP completeness envelope (as_of_block, holder_count, source, complete)",
+      "Return honeyroad's exact shapes as an Alchemy/Zapper/DeBank replacement for our own assets",
+      "Expose the same surface over HTTP (OpenAPI 3.1) and MCP (JSON-RPC) from one Hyper graph"
+    ]
+  },
+  "is_not": [
+    "Does NOT mint, burn, or initiate transfers \u2014 read-side only",
+    "Does NOT proxy chain RPC \u2014 consumes freeside-sonar for indexed reads",
+    "Does NOT own metadata \u2014 that's the codex (today) / freeside-storage (sovereign target)",
+    "Will NOT call third-party indexers (Alchemy, Zapper, DeBank, Dune) in any code path"
+  ],
+  "composes_with": {
+    "freeside-sonar": {
+      "role": "Indexed read source: TrackedHolder (counts), Token (per-token ownership), chain_metadata (ACVP as_of_block)",
+      "tag": "SonarPort@1.0.0+0000000000000000",
+      "required": true
+    }
+  },
+  "acvp_invariants": [
+    {
+      "id": "event_completeness",
+      "scope": "Every holdings response carries a CompletenessEnvelope ({as_of_block, holder_count, source, complete}); degraded fallback never claims complete:true",
+      "proof_artifact": "tests/acvp/event_completeness.test.ts"
+    },
+    {
+      "id": "idempotency",
+      "scope": "Identical (address, contracts, chains) inputs within the same as_of_block return byte-identical responses",
+      "proof_artifact": "tests/acvp/idempotency.test.ts"
+    }
+  ],
+  "sealed_schemas": [
+    {
+      "path": "packages/protocol/inventory-snapshot.schema.json",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "consumers": [
+        "mibera-honeyroad",
+        "identity-api"
+      ]
+    }
+  ],
+  "cycle_state": {
+    "status": "candidate",
+    "since": "2026-05-23",
+    "next_review": "2026-08-23"
+  },
+  "mcp": {
+    "shape": "data",
+    "paths": [
+      "remote-http"
+    ],
+    "remote": {
+      "transport": "streamable-http",
+      "endpoint": "${MCP_REMOTE_ENDPOINT}"
+    },
+    "auth": {
+      "kind": "api-key",
+      "header": "X-MCP-Key",
+      "credentials_ref": {
+        "type": "railway-secret",
+        "key": "MCP_INVENTORY_UPSTREAM_KEY"
+      }
+    },
+    "capabilities": [
+      "tools"
+    ],
+    "tools": [
+      "getHoldings",
+      "getNftsForOwner",
+      "getNftMetadata"
+    ],
+    "source_of_truth": {
+      "type": "database"
+    },
+    "pricing": {
+      "model": "free",
+      "description": "First-party tenant \u2014 free during initial rollout"
+    },
+    "publisher": "0xHoneyJar"
+  },
+  "capabilities": []
+}

@@ -18,6 +18,7 @@ import { openapiHandlers, generate, type OpenAPIDoc } from "@hyper/openapi";
 import { zodConverter } from "@hyper/openapi-zod";
 import { mcpServer } from "@hyper/mcp";
 import { routes } from "./routes.js";
+import beacon from "../packages/protocol/beacon.json";
 
 export const OPENAPI_CONFIG = {
   title: "inventory-api",
@@ -67,6 +68,9 @@ export const app = new Hyper({ name: "inventory-api" })
   .get("/openapi.json", ({ req }) => oa.spec(req))
   .get("/docs", ({ req }) => oa.docs(req))
   .get("/.well-known/mcp.json", () => ok(mcp.manifest))
+  // BeaconV3 building-identity (ADR-008 §D-11) — relights the dark beacon. The source has lived
+  // at packages/protocol/beacon.yaml; this serves it (beacon.json is regenerated from the yaml). NO auth.
+  .get("/.well-known/beacon.json", () => ok(beacon))
   // Hyper's pipeline auto-parses + consumes the POST body before the handler
   // runs, so `mcp.handle` (which calls `req.json()`) would see an empty stream.
   // Reconstruct a fresh Request from the already-parsed `ctx.body` and hand

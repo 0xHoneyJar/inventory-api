@@ -83,12 +83,21 @@ export function codexToNFT(
   grailRecord: GrailRecord | null
 ): NFT {
   const doc = codexToMetadataDocument(tokenId, record, imageUrl, isGrailToken, grailRecord);
+  return metadataDocumentToNFT(tokenId, doc, "image/png");
+}
+
+/** Map a plain MetadataDocument to the honeyroad NFT shape. */
+export function metadataDocumentToNFT(
+  tokenId: string,
+  doc: MetadataDocument,
+  contentType = "image/png"
+): NFT {
   return {
     tokenId,
     name: doc.name,
     description: doc.description,
-    imageUrl: doc.image, // renames image -> imageUrl for honeyroad shape
-    contentType: "image/png", // All Mibera main tokens are PNG
+    imageUrl: doc.image,
+    contentType,
     attributes: doc.attributes,
   };
 }

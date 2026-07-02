@@ -113,11 +113,23 @@ Existing EVM-only call sites use `validateEvmAddress` (alias for `validateWallet
 
 `getNftsForOwner` external SVM path: live query when `SONAR_GRAPHQL_ENDPOINT` is set. On live failure, **non-production** environments (`NODE_ENV !== "production"`) or explicit `SONAR_FIXTURE_FALLBACK=1` may fall back to the hermetic fixture; **production** returns empty holdings and logs a warning (never synthetic fixture rows). Tests: `tests/live-svm-ownership.test.ts`, `tests/svm-sonar-client.test.ts`, `tests/sonar-fallback.test.ts`.
 
+## Profile picture (INV-3)
+
+`getProfilePicture(address, { contract })` resolves the first renderable NFT image for a wallet in a registered collection.
+
+| Community | `contract` query param | Address form | Notes |
+|-----------|---------------------|--------------|-------|
+| Mibera (default) | *(omit)* or mibera contract | EVM `0x…` | Existing codex/sovereign path |
+| Pythenians | `pythians` or collection mint | SVM base58 (case-sensitive) | Ownership via `svm_collection_nft`; image via sovereign `pythenians/pythians/{mint}` |
+| Purupuru | `purupuru` or genesis contract | EVM `0x…` (Base) | Empty until sonar indexes Base + STOR-1 metadata lands |
+
+HTTP: `GET /profile/:address?contract=pythians` · MCP tool `getProfilePicture`.
+
 ## Out of scope (follow-on coord tasks)
 
 | Task | Scope |
 |------|-------|
-| **INV-3** | `getProfilePicture` live end-to-end + Beacon response shape for multi-chain holdings |
+| **DASH-1** | freeside-dashboard BFF batch attach + wire `roles.ts` member rows |
 | **STOR-1+** | Sovereign metadata host cutover for pythenians / purupuru worlds (spec landed storage-api#23) |
 
 ## Adding a collection

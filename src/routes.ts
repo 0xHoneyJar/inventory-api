@@ -237,7 +237,12 @@ export const routes = new Hyper()
       // `:address` AND lets the OpenAPI generator emit a `schema` for the path
       // parameter (OAS 3.1 §4.8.12 requires every parameter to carry one).
       params: z.object({
-        address: z.string().describe("0x-prefixed wallet address"),
+        address: z
+          .string()
+          .describe(
+            "Wallet address — EVM 0x-prefixed hex for Mibera/purupuru; " +
+              "SVM base58 (case-sensitive) for pythenians when ?contract=pythians."
+          ),
       }),
       query: z.object({
         contract: z

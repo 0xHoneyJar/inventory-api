@@ -111,7 +111,7 @@ Existing EVM-only call sites use `validateEvmAddress` (alias for `validateWallet
 | `liveSvmNftsForOwner(owner, collectionKey)` | Live belt `svm_collection_nft` query — owner is **verbatim base58** |
 | `getSvmNftsByOwner(owner, collectionKey)` | Hermetic fixture mirror of the same filter (`fixtures/sonar-svm-collection-nft.json`) |
 
-`getNftsForOwner` external SVM path: live query when `SONAR_GRAPHQL_ENDPOINT` is set, fail-soft to fixture on error or unreachable endpoint. Tests: `tests/live-svm-ownership.test.ts`, `tests/svm-sonar-client.test.ts`.
+`getNftsForOwner` external SVM path: live query when `SONAR_GRAPHQL_ENDPOINT` is set. On live failure, **non-production** environments (`NODE_ENV !== "production"`) or explicit `SONAR_FIXTURE_FALLBACK=1` may fall back to the hermetic fixture; **production** returns empty holdings and logs a warning (never synthetic fixture rows). Tests: `tests/live-svm-ownership.test.ts`, `tests/svm-sonar-client.test.ts`, `tests/sonar-fallback.test.ts`.
 
 ## Out of scope (follow-on coord tasks)
 

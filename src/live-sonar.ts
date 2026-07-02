@@ -23,13 +23,13 @@ export function isLiveMode(): boolean {
   return endpoint() !== undefined;
 }
 
-async function query<T>(gql: string): Promise<T> {
+async function query<T>(gql: string, variables?: Record<string, unknown>): Promise<T> {
   const ep = endpoint();
   if (!ep) throw new Error("SONAR_GRAPHQL_ENDPOINT not set");
   const res = await fetch(ep, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: gql }),
+    body: JSON.stringify(variables ? { query: gql, variables } : { query: gql }),
   });
   if (!res.ok) throw new Error(`sonar HTTP ${res.status}`);
   const body = (await res.json()) as { data?: T; errors?: unknown };
@@ -128,6 +128,17 @@ export interface SvmOwnedNft {
   name: string | null;
 }
 
+const LIVE_SVM_NFTS_QUERY = `
+  query LiveSvmNftsForOwner($owner: String!, $collectionKey: String!) {
+    svm_collection_nft(
+      where: { collection_key: { _eq: $collectionKey }, owner: { _eq: $owner } }
+    ) {
+      nft_mint
+      name
+    }
+  }
+`;
+
 /**
  * A holder's current SVM NFTs for a collection — the `svm_collection_nft` entity
  * published by the belt-gateway (Pythenians / external communities).
@@ -139,10 +150,9 @@ export async function liveSvmNftsForOwner(
   owner: string,
   collectionKey: string
 ): Promise<SvmOwnedNft[]> {
-  const ownerJson = JSON.stringify(owner);
-  const ck = JSON.stringify(collectionKey);
   const d = await query<{ svm_collection_nft: { nft_mint: string; name: string | null }[] }>(
-    `{ svm_collection_nft(where: {collection_key: {_eq: ${ck}}, owner: {_eq: ${ownerJson}}}) { nft_mint name } }`
+    LIVE_SVM_NFTS_QUERY,
+    { owner, collectionKey }
   );
   return d.svm_collection_nft.map((row) => ({
     nftMint: row.nft_mint,

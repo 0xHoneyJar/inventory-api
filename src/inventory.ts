@@ -11,6 +11,10 @@ import {
   validateWalletAddress,
   validateEvmAddress,
 } from "./address.js";
+import {
+  shouldUseSonarFixtureFallback,
+  warnSonarLiveEmpty,
+} from "./sonar-fallback.js";
 import { ValidationError, NotFoundError } from "./errors.js";
 import { fetchSovereignMetadata } from "./sovereign-metadata.js";
 import {
@@ -183,12 +187,16 @@ async function getExternalNftsForOwner(
   let nameByTokenId = new Map<string, string | null>();
 
   if (col.vm === "svm") {
-    let rows;
+    let rows: { nftMint: string; name: string | null }[] = [];
     if (liveSonar.isLiveMode()) {
       try {
         rows = await liveSonar.liveSvmNftsForOwner(owner, col.sonarCollectionKey);
-      } catch {
-        rows = svmSonarClient.getSvmNftsByOwner(owner, col.sonarCollectionKey);
+      } catch (err) {
+        if (shouldUseSonarFixtureFallback()) {
+          rows = svmSonarClient.getSvmNftsByOwner(owner, col.sonarCollectionKey);
+        } else {
+          warnSonarLiveEmpty(`svm_collection_nft(${col.sonarCollectionKey})`, err);
+        }
       }
     } else {
       rows = svmSonarClient.getSvmNftsByOwner(owner, col.sonarCollectionKey);
@@ -201,10 +209,15 @@ async function getExternalNftsForOwner(
     if (liveSonar.isLiveMode()) {
       try {
         tokenIds = await liveSonar.liveOwnerTokenIds(toChecksumAddress(owner), checksummedContract);
-      } catch {
-        tokenIds = sonarClient
-          .getTokensByOwner(toChecksumAddress(owner), checksummedContract, col.chainId)
-          .map((t) => t.tokenId);
+      } catch (err) {
+        if (shouldUseSonarFixtureFallback()) {
+          tokenIds = sonarClient
+            .getTokensByOwner(toChecksumAddress(owner), checksummedContract, col.chainId)
+            .map((t) => t.tokenId);
+        } else {
+          warnSonarLiveEmpty(`Token(${checksummedContract})`, err);
+          tokenIds = [];
+        }
       }
     } else {
       tokenIds = sonarClient

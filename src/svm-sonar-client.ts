@@ -27,7 +27,7 @@ function assertFixtureRow(row: unknown, filePath: string, index: number): SvmSon
       );
     }
   }
-  if (r.name !== null && typeof r.name !== "string") {
+  if (r.name !== undefined && r.name !== null && typeof r.name !== "string") {
     throw new FixtureLoadError(
       filePath,
       new Error(`nfts[${index}].name must be a string or null`)
@@ -37,7 +37,7 @@ function assertFixtureRow(row: unknown, filePath: string, index: number): SvmSon
     collectionKey: r.collectionKey as string,
     owner: r.owner as string,
     nftMint: r.nftMint as string,
-    name: (r.name ?? null) as string | null,
+    name: r.name === undefined || r.name === null ? null : (r.name as string),
   };
 }
 

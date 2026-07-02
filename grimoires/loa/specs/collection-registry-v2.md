@@ -104,13 +104,21 @@ Existing EVM-only call sites use `validateEvmAddress` (alias for `validateWallet
 | `listCollectionRegistry()` | All rows |
 | `listExternalCollections()` | External rows only |
 
+## SVM ownership (INV-2)
+
+| Function | Role |
+|----------|------|
+| `liveSvmNftsForOwner(owner, collectionKey)` | Live belt `svm_collection_nft` query — owner is **verbatim base58** |
+| `getSvmNftsByOwner(owner, collectionKey)` | Hermetic fixture mirror of the same filter (`fixtures/sonar-svm-collection-nft.json`) |
+
+`getNftsForOwner` external SVM path: live query when `SONAR_GRAPHQL_ENDPOINT` is set, fail-soft to fixture on error or unreachable endpoint. Tests: `tests/live-svm-ownership.test.ts`, `tests/svm-sonar-client.test.ts`.
+
 ## Out of scope (follow-on coord tasks)
 
 | Task | Scope |
 |------|-------|
-| **INV-2** | Live `svm_collection_nft` belt queries + fixture parity (partial stub exists in `live-sonar.ts` / `svm-sonar-client.ts`) |
-| **INV-3** | Beacon / public API response shape changes for multi-chain holdings |
-| **STOR-1** | Sovereign metadata host cutover for pythenians / purupuru worlds |
+| **INV-3** | `getProfilePicture` live end-to-end + Beacon response shape for multi-chain holdings |
+| **STOR-1+** | Sovereign metadata host cutover for pythenians / purupuru worlds (spec landed storage-api#23) |
 
 ## Adding a collection
 

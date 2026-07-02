@@ -15,6 +15,7 @@ import { ValidationError, NotFoundError } from "./errors.js";
 import { fetchSovereignMetadata } from "./sovereign-metadata.js";
 import {
   resolveExternalCollection,
+  resolveCollectionRouteParam,
   resolveMetadataStrategy,
   isRegisteredMiberaContract,
   MIBERA_CONTRACT,
@@ -303,15 +304,28 @@ export async function getNftMetadata(
     throw new ValidationError("tokenId", tokenId, "numeric string");
   }
 
+  const entry = resolveCollectionRouteParam(checksummedContract);
+  if (entry?.evmContracts?.length) {
+    const strategy = entry.metadataStrategy;
+    if (strategy.kind === "sovereign") {
+      return fetchSovereignMetadata(
+        entry.worldSlug,
+        strategy.slug,
+        checksummedContract,
+        tokenId
+      );
+    }
+    if (strategy.kind === "sovereign-world") {
+      return fetchSovereignMetadata(
+        entry.worldSlug,
+        null,
+        checksummedContract,
+        tokenId
+      );
+    }
+  }
+
   const strategy = resolveMetadataStrategy(checksummedContract) ?? { kind: "codex" };
-
-  if (strategy.kind === "sovereign") {
-    return fetchSovereignMetadata("mibera", strategy.slug, checksummedContract, tokenId);
-  }
-
-  if (strategy.kind === "sovereign-world") {
-    return fetchSovereignMetadata("mibera", null, checksummedContract, tokenId);
-  }
 
   const record = codexClient.getToken(tokenId);
   if (!record) {

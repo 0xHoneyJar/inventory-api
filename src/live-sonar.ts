@@ -122,6 +122,34 @@ export interface LiveCandiesBalance {
  */
 const CANDIES_HOLDER_FILTER_FIELD = "holder_id";
 
+/** One SVM collection NFT row owned by a wallet (current-state index). */
+export interface SvmOwnedNft {
+  nftMint: string;
+  name: string | null;
+}
+
+/**
+ * A holder's current SVM NFTs for a collection — the `svm_collection_nft` entity
+ * published by the belt-gateway (Pythenians / external communities).
+ *
+ * Ownership filter uses the gateway owner field (case-sensitive base58). Metadata
+ * sources (ME/DAS) are NOT used for ownership — only for one-time onboarding.
+ */
+export async function liveSvmNftsForOwner(
+  owner: string,
+  collectionKey: string
+): Promise<SvmOwnedNft[]> {
+  const ownerJson = JSON.stringify(owner);
+  const ck = JSON.stringify(collectionKey);
+  const d = await query<{ svm_collection_nft: { nft_mint: string; name: string | null }[] }>(
+    `{ svm_collection_nft(where: {collection_key: {_eq: ${ck}}, owner: {_eq: ${ownerJson}}}) { nft_mint name } }`
+  );
+  return d.svm_collection_nft.map((row) => ({
+    nftMint: row.nft_mint,
+    name: row.name,
+  }));
+}
+
 export async function liveCandiesBalances(
   address: string
 ): Promise<LiveCandiesBalance[]> {

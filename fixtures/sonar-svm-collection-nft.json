@@ -1,0 +1,22 @@
+{
+  "nfts": [
+    {
+      "collectionKey": "pythians",
+      "owner": "HdLiAKti95C7eNK78bfPEKbUrSP1roZgWxDnsbyWXour",
+      "nftMint": "PytheniansMint3180Example1111111111111111111",
+      "name": "Pythenians #3180"
+    },
+    {
+      "collectionKey": "pythians",
+      "owner": "HdLiAKti95C7eNK78bfPEKbUrSP1roZgWxDnsbyWXour",
+      "nftMint": "PytheniansMint1563Example1111111111111111111",
+      "name": "Pythenians #1563"
+    },
+    {
+      "collectionKey": "pythians",
+      "owner": "HdLiAKti95C7eNK78bfPEKbUrSP1roZgWxDnsbyWXour",
+      "nftMint": "PytheniansMint3150Example1111111111111111111",
+      "name": "Pythenians #3150"
+    }
+  ]
+}

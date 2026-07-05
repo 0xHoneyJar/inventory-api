@@ -55,7 +55,11 @@ via `index.ts` for the route handlers + tests.
 | Surface | Host | Audience |
 |---------|------|----------|
 | **HTTP (canonical)** | `https://inventory.0xhoneyjar.xyz` → Railway service `inventory-api` | dashboards, hovercards, honeyroad UI, any HTTP consumer |
-| MCP / agent | `inventory-mcp-production.up.railway.app` | agents only — edge-authed (anonymous requests 401 **by design**) |
+| MCP / agent | same host — `POST /mcp` + `GET /.well-known/mcp.json` (`src/app.ts`) | agents; one service serves both surfaces |
+
+> Note: `inventory-mcp-production.up.railway.app` (cited in #25's consumer report) is **not
+> ours** — no such service exists in the workspace; the URL was pattern-guessed and answers
+> from an unrelated Railway app. Do not document or depend on it.
 
 The service deploys on **Railway** (`railway.toml`, Dockerfile, `bun src/app.ts`,
 healthcheck `/health`). There is **no Vercel deployment** — the apex domain is a

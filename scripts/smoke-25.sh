@@ -46,7 +46,11 @@ fi
 
 # 2. beacon.json
 code=$(curl -sS -m 15 -o /dev/null -w '%{http_code}' "$BASE/.well-known/beacon.json" 2>&1) || code=000
-[[ "$code" == "200" ]] && check beacon 0 "http=200" || check beacon 1 "http=$code (needs PR #18 merged + deployed)"
+if [[ "$code" == "200" ]]; then
+  check beacon 0 "http=200"
+else
+  check beacon 1 "http=$code (beacon route absent — verify deploy is current)"
+fi
 
 # 3. nfts endpoint shape
 body=$(curl -sS -m 20 -w '\n%{http_code}' "$BASE/nfts/$CONTRACT/owner/$HOLDER?pageSize=6" 2>&1) || body=$'\n000'

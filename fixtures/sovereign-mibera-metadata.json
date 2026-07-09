@@ -1,0 +1,4662 @@
+{
+  "1": {
+    "name": "Mibera #1",
+    "description": "Freetekno · Greek ancestor · Cancer sun, Leo moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/8a7e39404ebf86073fab1d068d7037930298d121.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/1",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Greek"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 41
+      },
+      {
+        "trait_type": "background",
+        "value": "Fyre Festival"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Afro"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Grey"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Cig"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Htrk Night Faces"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Red Sunglasses"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Fluoro Pink"
+      },
+      {
+        "trait_type": "item",
+        "value": "Beads"
+      },
+      {
+        "trait_type": "drug",
+        "value": "St. John’S Wort"
+      }
+    ]
+  },
+  "2": {
+    "name": "Mibera #2",
+    "description": "Chicago/Detroit · Arabs ancestor · Gemini sun, Pisces moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/f027de5aa9f0ba87ba922e684ab872019cae7ff9.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/2",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Arabs"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Gemini"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 22
+      },
+      {
+        "trait_type": "background",
+        "value": "Castlemorton"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ivory"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Classic Orange"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Ocean"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Spiral Tee"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Cpap"
+      },
+      {
+        "trait_type": "item",
+        "value": "Nutmeg Plant"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Tobacco"
+      }
+    ]
+  },
+  "3": {
+    "name": "Mibera #3",
+    "description": "Milady · Ethiopian ancestor · Capricorn sun, Taurus moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/04a514365c0ec1baa442dbe537efa922d4408c95.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/3",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Ethiopian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Taurus"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Water"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 15
+      },
+      {
+        "trait_type": "background",
+        "value": "Cave Art"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ivory"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Messy Bob Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sparkle Gold"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Short"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Free Palestine"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Forehead Kiss"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Squad"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Tear Drop"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Grateful Dead Mushroom"
+      },
+      {
+        "trait_type": "item",
+        "value": "Hotdog"
+      },
+      {
+        "trait_type": "drug",
+        "value": "M-Cat"
+      }
+    ]
+  },
+  "4": {
+    "name": "Mibera #4",
+    "description": "Acidhouse · Gabon ancestor · Scorpio sun, Aquarius moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/7a4f2706eb2ef8388bff1b31a3fb2391786f1f3f.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/4",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Gabon"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 20
+      },
+      {
+        "trait_type": "background",
+        "value": "Sunrise"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Short Messy Black"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Leaf"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Baddies Crop"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Tez Watermelon"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Mottega Blue"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Baddie Double Gold"
+      },
+      {
+        "trait_type": "item",
+        "value": "Green Glowstick"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Sildenafil"
+      }
+    ]
+  },
+  "5": {
+    "name": "Mibera #5",
+    "description": "Freetekno · Gabon ancestor · Leo sun, Taurus moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/3e2fc8d2d3bb62b8365587aa06227d0c67daf01e.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/5",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Gabon"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Taurus"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "element",
+        "value": "Water"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 32
+      },
+      {
+        "trait_type": "background",
+        "value": "Hor Berlin"
+      },
+      {
+        "trait_type": "body",
+        "value": "Honey"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Short Flared Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Intense"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Cig"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Ruggy"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Stylized Fashion"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Round"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Milady Eyes Hand"
+      },
+      {
+        "trait_type": "item",
+        "value": "Henbane Sprig"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Tabernaemontana"
+      }
+    ]
+  },
+  "6": {
+    "name": "Mibera #6",
+    "description": "Freetekno · Indian ancestor · Virgo sun, Gemini moon · swag rank A",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/8497d7a7f771c3720db611b635067d2e8e102c45.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/6",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Indian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Gemini"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Gemini"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "A"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 56
+      },
+      {
+        "trait_type": "background",
+        "value": "Detroit"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ebony"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Hime Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Leaf"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Cig"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Peyote Patterned"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Mottega Blue"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Spiral 2"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Indian Paint"
+      },
+      {
+        "trait_type": "item",
+        "value": "Clear Pill Capsule"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Bhang"
+      }
+    ]
+  },
+  "7": {
+    "name": "Mibera #7",
+    "description": "Freetekno · Haitian ancestor · Leo sun, Aquarius moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/34384ee52b5ab06a77a97a2422ba1a51087d40de.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/7",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Haitian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 17
+      },
+      {
+        "trait_type": "background",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Braided Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Ecstasy Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Cig"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Diy"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Wide Brim"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Gold Hoop"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Cross"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Triskele Hand"
+      },
+      {
+        "trait_type": "item",
+        "value": "Scum Manifesto"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Lsd"
+      }
+    ]
+  },
+  "8": {
+    "name": "Mibera #8",
+    "description": "Milady · Thai ancestor · Capricorn sun, Leo moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/81b12c2c8f0daa81349bf2bcf54884974dbdc745.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/8",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Thai"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Water"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 22
+      },
+      {
+        "trait_type": "background",
+        "value": "Apdao"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Stylish"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Bright Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Chuffed"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Not Gay"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Spy"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Mibera Smiley"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Oracle"
+      },
+      {
+        "trait_type": "item",
+        "value": "Boo Bear 1"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Sakae Na"
+      }
+    ]
+  },
+  "9": {
+    "name": "Mibera #9",
+    "description": "Acidhouse · Irish Druids ancestor · Scorpio sun, Leo moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/eb817f7a79c31e77c8e53386256c504018e601a6.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/9",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Irish Druids"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "element",
+        "value": "Fire"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 24
+      },
+      {
+        "trait_type": "background",
+        "value": "El Dorado"
+      },
+      {
+        "trait_type": "body",
+        "value": "Beige"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Long Wavy Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Pinhole Sky"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Content"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Mr Acid House"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Snow Goggles 2"
+      },
+      {
+        "trait_type": "item",
+        "value": "Porridge"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Mushrooms"
+      }
+    ]
+  },
+  "10": {
+    "name": "Mibera #10",
+    "description": "Chicago/Detroit · Aboriginal ancestor · Gemini sun, Aries moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/736421811aeef51e426d978761d8b7f3e707844c.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/10",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Aboriginal"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Gemini"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Libra"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 31
+      },
+      {
+        "trait_type": "background",
+        "value": "Roadside"
+      },
+      {
+        "trait_type": "body",
+        "value": "Mahogany"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Cottage Brown"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sparkle Forest"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Intense"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Blunted"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Chicago Bulls"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Abusive"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Chrome Kitty"
+      },
+      {
+        "trait_type": "item",
+        "value": "Spiral Fossil"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Pituri"
+      }
+    ]
+  },
+  "11": {
+    "name": "Mibera #11",
+    "description": "Milady · Arabs ancestor · Capricorn sun, Leo moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/5e7c0887cc5b89ee2c426bdbcae1b6ddbfe1d6fa.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/11",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Arabs"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 27
+      },
+      {
+        "trait_type": "background",
+        "value": "Panama"
+      },
+      {
+        "trait_type": "body",
+        "value": "Beige"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Medium Wavy Brown"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sparkle Grey"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Intense"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Gurn"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Arabs For Black Power"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Sudan Sufi"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Chrome Kitty"
+      },
+      {
+        "trait_type": "item",
+        "value": "Smilee"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Testosterone"
+      }
+    ]
+  },
+  "12": {
+    "name": "Mibera #12",
+    "description": "Acidhouse · Mongolian ancestor · Sagittarius sun, Aquarius moon · swag rank A",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/ab85e5267a6357e9511cf952bb34988872ec81e2.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/12",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Mongolian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "A"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 50
+      },
+      {
+        "trait_type": "background",
+        "value": "Constellations"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Messy Bob Brown"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Sky"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Content"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Red Dungarees"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Hat With Feathers"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Golden Hoop"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Chulym 2"
+      },
+      {
+        "trait_type": "item",
+        "value": "Blue Meanie"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Scopolamine"
+      }
+    ]
+  },
+  "13": {
+    "name": "Mibera #13",
+    "description": "Freetekno · Haitian ancestor · Cancer sun, Gemini moon · swag rank D",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/63b294e1d588681a7e0bc5cbfa468f4e42b514cd.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/13",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Haitian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Gemini"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "D"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 9
+      },
+      {
+        "trait_type": "background",
+        "value": "Fyre Festival"
+      },
+      {
+        "trait_type": "body",
+        "value": "Clay"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Rave Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Ecstasy Sky"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Intense"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Blehhh"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Ivx"
+      },
+      {
+        "trait_type": "item",
+        "value": "Bhang Cup"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Lsd"
+      }
+    ]
+  },
+  "14": {
+    "name": "Mibera #14",
+    "description": "Freetekno · Mayan ancestor · Leo sun, Scorpio moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/16a0997faa4e0ee643d2aa5c9f614fce1e9a0d34.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/14",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Mayan"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 39
+      },
+      {
+        "trait_type": "background",
+        "value": "Milady Rave 2"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ivory"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Relaxed Blonde"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Heart Ocean"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Tongue"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Bjork"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Cowboy"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Cyber Punk 2"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Tyson"
+      },
+      {
+        "trait_type": "item",
+        "value": "Pituri Plant"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Ayahuasca"
+      }
+    ]
+  },
+  "15": {
+    "name": "Mibera #15",
+    "description": "Milady · Sami ancestor · Aquarius sun, Aries moon · swag rank A",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/1075274bbce576f2c80f4bfc80f6dff399dedd33.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/15",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Sami"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "A"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 55
+      },
+      {
+        "trait_type": "background",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "body",
+        "value": "Clay"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Medium Wavy Green"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sparkle Gold"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Short"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Acid Mibera"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Cincinnati Reds"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Swimming Goggles"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Tyson"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Reindeer"
+      },
+      {
+        "trait_type": "item",
+        "value": "Mandrake Plant"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Kratom"
+      }
+    ]
+  },
+  "16": {
+    "name": "Mibera #16",
+    "description": "Acidhouse · Greek ancestor · Sagittarius sun, Sagittarius moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/5666dbb601c0d8a17104057172aafd48e21f13ea.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/16",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Greek"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 16
+      },
+      {
+        "trait_type": "background",
+        "value": "Milady Rave 2"
+      },
+      {
+        "trait_type": "body",
+        "value": "Tan"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Short Flared Neon Orange"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Crying Lilac"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Content"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Nazi Pedo Cult"
+      },
+      {
+        "trait_type": "item",
+        "value": "Grateful Dead Tarot Book"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Sertraline"
+      }
+    ]
+  },
+  "17": {
+    "name": "Mibera #17",
+    "description": "Acidhouse · Traveller ancestor · Libra sun, Capricorn moon · swag rank Sss",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/8fa38d8b307458620f80d98a5d6bb4c1a5146617.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/17",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Traveller"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Libra"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "Sss"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 86
+      },
+      {
+        "trait_type": "background",
+        "value": "Mississippi River"
+      },
+      {
+        "trait_type": "body",
+        "value": "Mahogany"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Relaxed Purple"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sparkle Ocean"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Content"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Techno Table"
+      },
+      {
+        "trait_type": "hat",
+        "value": "No World As Fucked As Mine"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Mottega Yellow"
+      },
+      {
+        "trait_type": "item",
+        "value": "Apple Bag"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Iboga"
+      }
+    ]
+  },
+  "18": {
+    "name": "Mibera #18",
+    "description": "Freetekno · Hindu ancestor · Cancer sun, Aquarius moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/b1db216619ca5d8877d35d5d31d4c005689fbb3b.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/18",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Hindu"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 20
+      },
+      {
+        "trait_type": "background",
+        "value": "Honeyroad"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Grey"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Tie Dye"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Devon Head"
+      },
+      {
+        "trait_type": "item",
+        "value": "Brahmi Sprig"
+      },
+      {
+        "trait_type": "drug",
+        "value": "St. John’S Wort"
+      }
+    ]
+  },
+  "19": {
+    "name": "Mibera #19",
+    "description": "Milady · Nepal ancestor · Capricorn sun, Leo moon · swag rank D",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/223a109de542cda990f1336e8a93b38855aee9ea.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/19",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Nepal"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "D"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 15
+      },
+      {
+        "trait_type": "background",
+        "value": "Jungle Lab"
+      },
+      {
+        "trait_type": "body",
+        "value": "Clay"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Long Wavy Green"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Clocks"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Tongue"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Simple Blue"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Catboy Ears"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Tekno 2"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Gold Hoop"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Minimal Temple Of Obodas"
+      },
+      {
+        "trait_type": "item",
+        "value": "Handheld Sickle"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Grayanotoxin"
+      }
+    ]
+  },
+  "20": {
+    "name": "Mibera #20",
+    "description": "Milady · Nepal ancestor · Aquarius sun, Aquarius moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/4fd48a649e00ea5a5e2e3278256e961bc66f70d7.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/20",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Nepal"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 15
+      },
+      {
+        "trait_type": "background",
+        "value": "Sunset"
+      },
+      {
+        "trait_type": "body",
+        "value": "Pink"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Classic Blonde"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Intense"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Belch"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Suzuha"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Babybera X Beradrome Helmet"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Harajuku"
+      },
+      {
+        "trait_type": "item",
+        "value": "Kratom Dose"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Ketamine"
+      }
+    ]
+  },
+  "21": {
+    "name": "Mibera #21",
+    "description": "Milady · Thai ancestor · Capricorn sun, Sagittarius moon · swag rank S",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/b527a23542517edcf125095f63ae8acef24fdc7f.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/21",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Thai"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "S"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 64
+      },
+      {
+        "trait_type": "background",
+        "value": "Record Store"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ivory"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Relaxed Green"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Lilac"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Blunted"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Ai Weiwei Assange"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Purple Blossom"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Reindeer"
+      },
+      {
+        "trait_type": "item",
+        "value": "Thc Bear"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Sakae Na"
+      }
+    ]
+  },
+  "22": {
+    "name": "Mibera #22",
+    "description": "Milady · Satanist ancestor · Aquarius sun, Gemini moon · swag rank D",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/ee92f88127356c5c6182ce4b06e65e8e64a0e16f.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/22",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Satanist"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Gemini"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "D"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 13
+      },
+      {
+        "trait_type": "background",
+        "value": "Swirly"
+      },
+      {
+        "trait_type": "body",
+        "value": "Bronze"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Short Messy Brown"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Grey"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Belch"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Simple Green"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Peyote Hat"
+      },
+      {
+        "trait_type": "item",
+        "value": "Clear Pill Capsule"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Sassafras"
+      }
+    ]
+  },
+  "23": {
+    "name": "Mibera #23",
+    "description": "Milady · Arabs ancestor · Capricorn sun, Pisces moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/71a5b488476a501e4bce4d9ce84b659bb011f94d.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/23",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Arabs"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Taurus"
+      },
+      {
+        "trait_type": "element",
+        "value": "Water"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 21
+      },
+      {
+        "trait_type": "background",
+        "value": "Clouds"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ivory"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Relaxed Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Hypno Sky"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Gadsden Flag"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Orange"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Ufo"
+      },
+      {
+        "trait_type": "item",
+        "value": "Remilia Case"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Caffeine"
+      }
+    ]
+  },
+  "24": {
+    "name": "Mibera #24",
+    "description": "Milady · Native American ancestor · Capricorn sun, Taurus moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/425f8da31c4afc030a48ce785db7c7d3f0f1ff81.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/24",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Native American"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Taurus"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 25
+      },
+      {
+        "trait_type": "background",
+        "value": "Fyre Festival"
+      },
+      {
+        "trait_type": "body",
+        "value": "Sable"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Braided Green"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Heart Ocean"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Sad"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Unclench"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Bera Headband"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Dog Bone"
+      },
+      {
+        "trait_type": "item",
+        "value": "Hotdog"
+      },
+      {
+        "trait_type": "drug",
+        "value": "2C-B"
+      }
+    ]
+  },
+  "25": {
+    "name": "Mibera #25",
+    "description": "Acidhouse · Greek ancestor · Libra sun, Aries moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/43527b8547f6d3d6e20cf4ec527131ffccd44e26.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/25",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Greek"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Libra"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Taurus"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 19
+      },
+      {
+        "trait_type": "background",
+        "value": "Speakers"
+      },
+      {
+        "trait_type": "body",
+        "value": "Clay"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Long Wavy Black"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Sky"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Cig"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Old School"
+      },
+      {
+        "trait_type": "mask",
+        "value": "Mf Doom"
+      },
+      {
+        "trait_type": "item",
+        "value": "The Liberator"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Shroom Tea"
+      }
+    ]
+  },
+  "26": {
+    "name": "Mibera #26",
+    "description": "Chicago/Detroit · Greek ancestor · Gemini sun, Sagittarius moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/1f688983f29993ee64ca86690bb1fca3eb01b352.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/26",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Greek"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Gemini"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Fire"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 20
+      },
+      {
+        "trait_type": "background",
+        "value": "Mississippi River"
+      },
+      {
+        "trait_type": "body",
+        "value": "Beige"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Long Wavy Black"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Gold"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Henlo With Chain"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Wide Brim"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Reflections"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Spiral 1"
+      },
+      {
+        "trait_type": "item",
+        "value": "Mexicana"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Shroom Tea"
+      }
+    ]
+  },
+  "27": {
+    "name": "Mibera #27",
+    "description": "Freetekno · Mayan ancestor · Cancer sun, Capricorn moon · swag rank Ss",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/3d3f2fe333e65886a4dff79822add4fe00ae9aa7.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/27",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Mayan"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Taurus"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "Ss"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 72
+      },
+      {
+        "trait_type": "background",
+        "value": "Great Barrier Reef"
+      },
+      {
+        "trait_type": "body",
+        "value": "Beige"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Hime Orange"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Crying Leaf"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Nazi Pedo Cult"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Den Hopium"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Purple Glow"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Star Trio"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Star And Crescent Hand"
+      },
+      {
+        "trait_type": "item",
+        "value": "Yeeted"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Ololiuqui"
+      }
+    ]
+  },
+  "28": {
+    "name": "Mibera #28",
+    "description": "Chicago/Detroit · Haitian ancestor · Gemini sun, Virgo moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/931d89644e82a94d4a31e74eb90a1f1fb16b46ab.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/28",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Haitian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Gemini"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 20
+      },
+      {
+        "trait_type": "background",
+        "value": "Detroit"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ivory"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Cottage Magenta"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Crying Leaf"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Blehhh"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Henlo Jersey"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Grateful Dead Yellow"
+      },
+      {
+        "trait_type": "item",
+        "value": "Drum"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Lsd"
+      }
+    ]
+  },
+  "29": {
+    "name": "Mibera #29",
+    "description": "Chicago/Detroit · Irish Druids ancestor · Aries sun, Aries moon · swag rank D",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/aa3443e4e26b44675c16618f8d2a51028dc16296.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/29",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Irish Druids"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "D"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 14
+      },
+      {
+        "trait_type": "background",
+        "value": "Techno City"
+      },
+      {
+        "trait_type": "body",
+        "value": "Clay"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Hime Brown"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Sky"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Grit"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Free Ross"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Alien Head Band"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Red Glow"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Bandage"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Triskele Hand"
+      },
+      {
+        "trait_type": "item",
+        "value": "Shin Ramyun"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Ethylene"
+      }
+    ]
+  },
+  "30": {
+    "name": "Mibera #30",
+    "description": "Milady · Mongolian ancestor · Pisces sun, Libra moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/f92864a9f80591c7209e74195d14882af52b21ef.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/30",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Mongolian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Libra"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 44
+      },
+      {
+        "trait_type": "background",
+        "value": "Panama"
+      },
+      {
+        "trait_type": "body",
+        "value": "Beige"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Long Wavy Black"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Bright Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Content"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Special K"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Hat With Feathers"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Red Lolipop"
+      },
+      {
+        "trait_type": "item",
+        "value": "Sassafras Plant"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Datura"
+      }
+    ]
+  },
+  "31": {
+    "name": "Mibera #31",
+    "description": "Acidhouse · Greek ancestor · Scorpio sun, Capricorn moon · swag rank F",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/dbd171514ed927ae9d29d42852753423da2e737d.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/31",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Greek"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Fire"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "F"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 6
+      },
+      {
+        "trait_type": "background",
+        "value": "Mountain"
+      },
+      {
+        "trait_type": "body",
+        "value": "Beige"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Relaxed Blonde"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Hypno Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Short"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Queasy"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Rape"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Barbed Wire"
+      },
+      {
+        "trait_type": "item",
+        "value": "Subaeruginosa"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Shroom Tea"
+      }
+    ]
+  },
+  "32": {
+    "name": "Mibera #32",
+    "description": "Chicago/Detroit · Irish Druids ancestor · Aries sun, Aquarius moon · swag rank A",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/f045df9e75a189457bcea2a15619440cf93e00e0.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/32",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Irish Druids"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "A"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 49
+      },
+      {
+        "trait_type": "background",
+        "value": "Yeet"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Messy Bob Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Lilac"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Blunted"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Spiral Tee"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Midsommar"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Green Glow"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Mibera"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Grateful Dead Mushroom"
+      },
+      {
+        "trait_type": "item",
+        "value": "Sugarcane Portion"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Coca"
+      }
+    ]
+  },
+  "33": {
+    "name": "Mibera #33",
+    "description": "Milady · Gabon ancestor · Aquarius sun, Capricorn moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/9ceda80e1f69142fc35e9e029c0c93a7a3d43e38.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/33",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Gabon"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 42
+      },
+      {
+        "trait_type": "background",
+        "value": "Constellations"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Messy Bob Green"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Stoned Gold"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Sad"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Differently"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Sami Hat"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Hand"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Lineart Lotus"
+      },
+      {
+        "trait_type": "item",
+        "value": "Baby Sun Bear"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Tabernaemontana"
+      }
+    ]
+  },
+  "34": {
+    "name": "Mibera #34",
+    "description": "Milady · Punjabi ancestor · Aquarius sun, Pisces moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/ad176c978e9125faf723eabea4f7d4be95c6b187.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/34",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Punjabi"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 34
+      },
+      {
+        "trait_type": "background",
+        "value": "Constellations"
+      },
+      {
+        "trait_type": "body",
+        "value": "Sable"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Braided Orange"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Leaf"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Gasp"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Wikipedia Editor"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Remcon"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Chulym 2"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Indus Valley Civilization Oxen"
+      },
+      {
+        "trait_type": "item",
+        "value": "Ephedra Sprig"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Tobacco"
+      }
+    ]
+  },
+  "35": {
+    "name": "Mibera #35",
+    "description": "Freetekno · Arabs ancestor · Virgo sun, Libra moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/90154f852487f73bd04c2ff095121faca404ba67.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/35",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Arabs"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Libra"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "element",
+        "value": "Water"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 29
+      },
+      {
+        "trait_type": "background",
+        "value": "Milady Rave"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ivory"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Short Purple"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Lilac"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Hugs Not Drugs"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Got Autism"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Baddie Double Gold"
+      },
+      {
+        "trait_type": "item",
+        "value": "Cassette"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Mandrake"
+      }
+    ]
+  },
+  "36": {
+    "name": "Mibera #36",
+    "description": "Freetekno · Thai ancestor · Cancer sun, Pisces moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/57c26db99b3ea84b542899e0d6dc6735a8102e3a.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/36",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Freetekno"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Thai"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Water"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 24
+      },
+      {
+        "trait_type": "background",
+        "value": "Rave 1"
+      },
+      {
+        "trait_type": "body",
+        "value": "Sable"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Braided Green"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Gasp"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Dare Memecoins"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Cpap"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Trans Flag"
+      },
+      {
+        "trait_type": "item",
+        "value": "Kratom Dose"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Methamphetamine"
+      }
+    ]
+  },
+  "37": {
+    "name": "Mibera #37",
+    "description": "Milady · Chinese ancestor · Pisces sun, Libra moon · swag rank D",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/5558f68db43dbf714fb52d732aa805c5a53411ee.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/37",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Chinese"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Libra"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "D"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 14
+      },
+      {
+        "trait_type": "background",
+        "value": "Sunset"
+      },
+      {
+        "trait_type": "body",
+        "value": "Beige"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Stoned Grey"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Sad"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "I Was Mibera"
+      },
+      {
+        "trait_type": "mask",
+        "value": "Pink Bera Ski"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Picture Cave"
+      },
+      {
+        "trait_type": "item",
+        "value": "Phone"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Dextroamphetamine"
+      }
+    ]
+  },
+  "38": {
+    "name": "Mibera #38",
+    "description": "Milady · Ethiopian ancestor · Aquarius sun, Scorpio moon · swag rank A",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/8fe05c7e9e9a09e0e11d46f7713956c3765e965a.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/38",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Ethiopian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "A"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 47
+      },
+      {
+        "trait_type": "background",
+        "value": "Cave Art"
+      },
+      {
+        "trait_type": "body",
+        "value": "Ivory"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Braided Green"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Crossed Grey"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Drool"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Egg Brain"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Modern Irish"
+      },
+      {
+        "trait_type": "item",
+        "value": "Mad Honey"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Coffee"
+      }
+    ]
+  },
+  "39": {
+    "name": "Mibera #39",
+    "description": "Milady · Nepal ancestor · Aquarius sun, Sagittarius moon · swag rank S",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/e0f4fccb9774bd28efb5078145610e2395012a4a.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/39",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Nepal"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "S"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 60
+      },
+      {
+        "trait_type": "background",
+        "value": "Bear Cave"
+      },
+      {
+        "trait_type": "body",
+        "value": "Mahogany"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Grey"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Blunted"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Cute Kigu"
+      },
+      {
+        "trait_type": "item",
+        "value": "303 Drum Machine"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Ketamine"
+      }
+    ]
+  },
+  "40": {
+    "name": "Mibera #40",
+    "description": "Acidhouse · Aboriginal ancestor · Libra sun, Virgo moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/c492527f52384f907d20b50d7880832a894125aa.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/40",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Aboriginal"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Libra"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "element",
+        "value": "Water"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 20
+      },
+      {
+        "trait_type": "background",
+        "value": "Panama"
+      },
+      {
+        "trait_type": "body",
+        "value": "Sable"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Short Messy Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Orange Buddhist"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Yayo"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Serotonin"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Star Face"
+      },
+      {
+        "trait_type": "item",
+        "value": "Remilia Cig Pack"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Nicotine"
+      }
+    ]
+  },
+  "41": {
+    "name": "Mibera #41",
+    "description": "Milady · Mongolian ancestor · Pisces sun, Scorpio moon · swag rank A",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/d618a47e9fb995a4fa36b4d8cc78dc8de7ee9945.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/41",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Mongolian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "A"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 52
+      },
+      {
+        "trait_type": "background",
+        "value": "No More Walls"
+      },
+      {
+        "trait_type": "body",
+        "value": "Honey"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Cottage Magenta"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Bright Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Short"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Content"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Free Ross"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Hat With Feathers"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "D2 Edamame"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Smol Ring"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Bleeding"
+      },
+      {
+        "trait_type": "item",
+        "value": "Scum Manifesto"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Sassafras"
+      }
+    ]
+  },
+  "42": {
+    "name": "Mibera #42",
+    "description": "Chicago/Detroit · Indian ancestor · Aries sun, Pisces moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/ec02966abcc70be9c853c3ebbd8da71a8cb18b77.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/42",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Indian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 36
+      },
+      {
+        "trait_type": "background",
+        "value": "Clouds"
+      },
+      {
+        "trait_type": "body",
+        "value": "Mahogany"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Classic Green"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sparkle Forest"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Cig"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Shameless Misandrist"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Spiky Lee Scratch"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Indian Paint"
+      },
+      {
+        "trait_type": "item",
+        "value": "Anarchist Cookbook"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Piracetam"
+      }
+    ]
+  },
+  "43": {
+    "name": "Mibera #43",
+    "description": "Chicago/Detroit · Arabs ancestor · Aries sun, Capricorn moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/50649284f9cc3e0f4b18997feac8d3267daff5ce.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/43",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Arabs"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Taurus"
+      },
+      {
+        "trait_type": "element",
+        "value": "Fire"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 22
+      },
+      {
+        "trait_type": "background",
+        "value": "Rave 3"
+      },
+      {
+        "trait_type": "body",
+        "value": "Mahogany"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Medium Wavy Brown"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Heart Grey"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Content"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Simple Yellow"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Round"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Ethiopian"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Semilunar"
+      },
+      {
+        "trait_type": "item",
+        "value": "Chrome Nails"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Ancestral Trance"
+      }
+    ]
+  },
+  "44": {
+    "name": "Mibera #44",
+    "description": "Acidhouse · Nepal ancestor · Sagittarius sun, Scorpio moon · swag rank S",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/99deef48b59a852f91a19b89d77996715202e0ef.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/44",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Nepal"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Scorpio"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "S"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 66
+      },
+      {
+        "trait_type": "background",
+        "value": "Techno City"
+      },
+      {
+        "trait_type": "body",
+        "value": "Clay"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Short Messy Black"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Sky"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Intense"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Queasy"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Tedism"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Aitoshi"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Red Glow"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Crafty"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Nepalese Flag"
+      },
+      {
+        "trait_type": "item",
+        "value": "Aum Doomsday Sign"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Mucuna Pruriens"
+      }
+    ]
+  },
+  "45": {
+    "name": "Mibera #45",
+    "description": "Acidhouse · Arabs ancestor · Sagittarius sun, Aries moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/2df7d9eca8b687ca3799b4cd4d694ca042ff830a.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/45",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Arabs"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 29
+      },
+      {
+        "trait_type": "background",
+        "value": "River Boyne"
+      },
+      {
+        "trait_type": "body",
+        "value": "Pink"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Relaxed Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Hypno Ocean"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Tongue"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Heavens Gate"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Remiliaco"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Tear Drop"
+      },
+      {
+        "trait_type": "item",
+        "value": "Come And Take It"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Nutmeg"
+      }
+    ]
+  },
+  "46": {
+    "name": "Mibera #46",
+    "description": "Milady · Greek ancestor · Aquarius sun, Aries moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/6f365b68921d90676184d35a31ae6bec9491d45c.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/46",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Greek"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aquarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "element",
+        "value": "Water"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 24
+      },
+      {
+        "trait_type": "background",
+        "value": "No More Walls"
+      },
+      {
+        "trait_type": "body",
+        "value": "Clay"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Normal Brown"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Crying Gold"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Grit"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Dare Rave"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Golden Hoop"
+      },
+      {
+        "trait_type": "item",
+        "value": "Honey Stick"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Nymphaea Caerulea"
+      }
+    ]
+  },
+  "47": {
+    "name": "Mibera #47",
+    "description": "Milady · Japanese ancestor · Pisces sun, Sagittarius moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/5d0f21055205a2ffbba5a4b6855acdd820a79586.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/47",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Japanese"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 21
+      },
+      {
+        "trait_type": "background",
+        "value": "Great Barrier Reef"
+      },
+      {
+        "trait_type": "body",
+        "value": "Bronze"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Cottage Blonde"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Crossed Ocean"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Grit"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Magenta Suit"
+      },
+      {
+        "trait_type": "hat",
+        "value": "I Have Mibera"
+      },
+      {
+        "trait_type": "item",
+        "value": "Tea Leaves"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Ethylene"
+      }
+    ]
+  },
+  "48": {
+    "name": "Mibera #48",
+    "description": "Milady · Palestinian ancestor · Pisces sun, Capricorn moon · swag rank B",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/a56224e02214bbf0a9402cdb012270d0db3d3686.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/48",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Palestinian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Capricorn"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "element",
+        "value": "Earth"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "B"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 27
+      },
+      {
+        "trait_type": "background",
+        "value": "Ford"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Relaxed Purple"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Crying Gold"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Concerned Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Normal"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Free Palestine"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Obb Lid"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Smol Strawberry"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Mibera Smiley"
+      },
+      {
+        "trait_type": "item",
+        "value": "The Rose Of Paracelsus"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Syrian Rue"
+      }
+    ]
+  },
+  "49": {
+    "name": "Mibera #49",
+    "description": "Milady · Chinese ancestor · Pisces sun, Pisces moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/dc682c12532c3ef7d299212a7ff871116bd12139.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/49",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Milady"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Chinese"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Pisces"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Cancer"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 18
+      },
+      {
+        "trait_type": "background",
+        "value": "Techno City"
+      },
+      {
+        "trait_type": "body",
+        "value": "Sable"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Normal Blonde"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sleepy Ocean"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Rug Core"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Pearl"
+      },
+      {
+        "trait_type": "face accessory",
+        "value": "Tear Drop"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Inverted Pentagram"
+      },
+      {
+        "trait_type": "item",
+        "value": "Sudoswap Owen Plushie"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Methamphetamine"
+      }
+    ]
+  },
+  "50": {
+    "name": "Mibera #50",
+    "description": "Acidhouse · Mongolian ancestor · Sagittarius sun, Aries moon · swag rank C",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/e1f2da7f13fa61fd58d466fa440ce09ad7bf3bfe.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/50",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Acidhouse"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Mongolian"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Ancient"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Sagittarius"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Leo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "C"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 20
+      },
+      {
+        "trait_type": "background",
+        "value": "Mobile Records"
+      },
+      {
+        "trait_type": "body",
+        "value": "Mahogany"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Stylish"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Normal Leaf"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Stern"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Smile"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Red Dungarees"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Star Goggles"
+      },
+      {
+        "trait_type": "tattoo",
+        "value": "Stupa"
+      },
+      {
+        "trait_type": "item",
+        "value": "Mascot Jani Bera"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Euphoria"
+      }
+    ]
+  },
+  "876": {
+    "name": "Black Hole",
+    "description": "Mibera drawn within a black hole, evoking uncertainty",
+    "image": "https://assets.0xhoneyjar.xyz/Mibera/grails/black-hole.webp",
+    "external_url": "https://0xhoneyjar.xyz/mibera/876",
+    "attributes": [
+      {
+        "trait_type": "tier",
+        "value": "Grail"
+      },
+      {
+        "trait_type": "category",
+        "value": "Concept"
+      },
+      {
+        "trait_type": "theme",
+        "value": "Mibera drawn within a black hole, evoking uncertainty"
+      },
+      {
+        "trait_type": "cultural reference",
+        "value": "A black hole is a region of spacetime where gravity is so strong that nothing — not even light — can escape."
+      }
+    ]
+  },
+  "2769": {
+    "name": "Air",
+    "description": "Cloud-like figure with sun filtering through",
+    "image": "https://assets.0xhoneyjar.xyz/Mibera/grails/air.webp",
+    "external_url": "https://0xhoneyjar.xyz/mibera/2769",
+    "attributes": [
+      {
+        "trait_type": "tier",
+        "value": "Grail"
+      },
+      {
+        "trait_type": "category",
+        "value": "Element"
+      },
+      {
+        "trait_type": "theme",
+        "value": "Cloud-like figure with sun filtering through"
+      },
+      {
+        "trait_type": "cultural reference",
+        "value": "Every Mibera is assigned one of four classical elements based on their birth coordinates."
+      }
+    ]
+  },
+  "4803": {
+    "name": "Aries",
+    "description": "Dumuzi the Shepherd as Aries with ram skull and Mars frequency",
+    "image": "https://assets.0xhoneyjar.xyz/Mibera/grails/aries.webp",
+    "external_url": "https://0xhoneyjar.xyz/mibera/4803",
+    "attributes": [
+      {
+        "trait_type": "tier",
+        "value": "Grail"
+      },
+      {
+        "trait_type": "category",
+        "value": "Zodiac"
+      },
+      {
+        "trait_type": "theme",
+        "value": "Dumuzi the Shepherd as Aries with ram skull and Mars frequency"
+      },
+      {
+        "trait_type": "cultural reference",
+        "value": "Dumuzi (also Tammuz) was a Sumerian shepherd god and consort of the goddess Inanna."
+      }
+    ]
+  },
+  "6805": {
+    "name": "Aquarius",
+    "description": "Hades as Aquarius with circulatory system and Uranus frequency",
+    "image": "https://assets.0xhoneyjar.xyz/Mibera/grails/aquarius.webp",
+    "external_url": "https://0xhoneyjar.xyz/mibera/6805",
+    "attributes": [
+      {
+        "trait_type": "tier",
+        "value": "Grail"
+      },
+      {
+        "trait_type": "category",
+        "value": "Zodiac"
+      },
+      {
+        "trait_type": "theme",
+        "value": "Hades as Aquarius with circulatory system and Uranus frequency"
+      },
+      {
+        "trait_type": "cultural reference",
+        "value": "Hades is the Greek god of the underworld and ruler of the dead."
+      }
+    ]
+  },
+  "9503": {
+    "name": "Buddhist",
+    "description": "Medicine Buddha thangka with amrita and blue lotus blotter",
+    "image": "https://assets.0xhoneyjar.xyz/Mibera/grails/buddhist.webp",
+    "external_url": "https://0xhoneyjar.xyz/mibera/9503",
+    "attributes": [
+      {
+        "trait_type": "tier",
+        "value": "Grail"
+      },
+      {
+        "trait_type": "category",
+        "value": "Ancestor"
+      },
+      {
+        "trait_type": "theme",
+        "value": "Medicine Buddha thangka with amrita and blue lotus blotter"
+      },
+      {
+        "trait_type": "cultural reference",
+        "value": "The Medicine Buddha (Bhaiṣajyaguru) is the Buddha of healing, central to Mahayana and Vajrayana traditions."
+      }
+    ]
+  },
+  "8485": {
+    "name": "Mibera #8485",
+    "description": "Chicago/Detroit · Rastafarians ancestor · Aries sun, Libra moon · swag rank D",
+    "image": "https://assets.0xhoneyjar.xyz/reveal_phase8/images/21c35dd0a10646721a60c1f8d39dfb01a691f686.png",
+    "external_url": "https://0xhoneyjar.xyz/mibera/8485",
+    "attributes": [
+      {
+        "trait_type": "archetype",
+        "value": "Chicago/Detroit"
+      },
+      {
+        "trait_type": "ancestor",
+        "value": "Rastafarians"
+      },
+      {
+        "trait_type": "time period",
+        "value": "Modern"
+      },
+      {
+        "trait_type": "sun sign",
+        "value": "Aries"
+      },
+      {
+        "trait_type": "moon sign",
+        "value": "Libra"
+      },
+      {
+        "trait_type": "ascending sign",
+        "value": "Virgo"
+      },
+      {
+        "trait_type": "element",
+        "value": "Air"
+      },
+      {
+        "trait_type": "swag rank",
+        "value": "D"
+      },
+      {
+        "trait_type": "swag score",
+        "value": 11
+      },
+      {
+        "trait_type": "background",
+        "value": "Cave Art"
+      },
+      {
+        "trait_type": "body",
+        "value": "Umber"
+      },
+      {
+        "trait_type": "hair",
+        "value": "Short Flared Blue"
+      },
+      {
+        "trait_type": "eyes",
+        "value": "Sparkle Brown"
+      },
+      {
+        "trait_type": "eyebrows",
+        "value": "Anxious Thick"
+      },
+      {
+        "trait_type": "mouth",
+        "value": "Content"
+      },
+      {
+        "trait_type": "shirt",
+        "value": "Overalls"
+      },
+      {
+        "trait_type": "hat",
+        "value": "Maid Head"
+      },
+      {
+        "trait_type": "glasses",
+        "value": "Tactical"
+      },
+      {
+        "trait_type": "earrings",
+        "value": "Green Lolipop"
+      },
+      {
+        "trait_type": "item",
+        "value": "Colorful Bong"
+      },
+      {
+        "trait_type": "drug",
+        "value": "Weed"
+      }
+    ]
+  }
+}

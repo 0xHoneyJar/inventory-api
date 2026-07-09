@@ -105,26 +105,29 @@ describe('fixture integrity', () => {
     );
   });
 
-  it('codex fixture imageUrls covers all token IDs in sonar tokens', () => {
-    const tokenIds: string[] = sonarFixture.tokens.map(
-      (t: { tokenId: string }) => t.tokenId
-    );
-    for (const id of tokenIds) {
-      expect(codexFixture.imageUrls[id]).toBeDefined();
+  it('codex fixture imageUrls cover every token in the codex fixture itself', () => {
+    // Internal consistency of the codex sample. It deliberately no longer needs to
+    // mirror the sonar fixture — see the orphan-token guard below.
+    for (const token of codexFixture.tokens) {
+      expect(codexFixture.imageUrls[String(token.id)]).toBeDefined();
     }
   });
 
-  it('codex fixture tokens cover all sonar token IDs', () => {
-    const sonarTokenIds = new Set<string>(
-      sonarFixture.tokens.map((t: { tokenId: string }) => t.tokenId)
-    );
+  it('sonar fixture holds at least one token ABSENT from the codex fixture', () => {
+    // Regression guard for bug 20260709-499c5a. These fixtures used to be mutually
+    // consistent — every sonar token id had a codex record — which made the
+    // codex-miss branch structurally unreachable and hid a defect that blanked the
+    // owner-list for ~99.5% of production holders. At least one orphan must remain
+    // so the sovereign metadata path is exercised hermetically.
     const codexTokenIds = new Set<string>([
       ...codexFixture.tokens.map((t: { id: number }) => String(t.id)),
       ...codexFixture.grails.map((g: { id: number }) => String(g.id)),
     ]);
-    for (const id of sonarTokenIds) {
-      expect(codexTokenIds.has(id)).toBe(true);
-    }
+    const orphans = sonarFixture.tokens
+      .map((t: { tokenId: string }) => t.tokenId)
+      .filter((id: string) => !codexTokenIds.has(id));
+
+    expect(orphans).toContain('8485');
   });
 
   it('codex generative tokens have at least 10 non-null trait fields', () => {

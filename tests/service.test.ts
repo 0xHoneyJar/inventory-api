@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { app, buildOpenAPI, buildMCPManifest } from "../src/app.js";
+import { stubSovereignCdn } from "./support/sovereign-cdn-stub.js";
 
 /**
  * Hyper service tests. We call the app's Web-standard `fetch` handler
@@ -8,6 +9,11 @@ import { app, buildOpenAPI, buildMCPManifest } from "../src/app.js";
  * The HTTP routes, the MCP JSON-RPC endpoint, and the OpenAPI/MCP discovery
  * surfaces all funnel through the same route graph (src/routes.ts), which
  * calls the domain functions (Part 1 logic) in src/inventory.ts.
+ *
+ * Both Mibera metadata routes (single-token and owner-list) read the sovereign
+ * storage-api, so `fetch` is stubbed from the committed fixture. Without this the
+ * file silently reached metadata.0xhoneyjar.xyz over the network — it did so from
+ * PR #16 until bug 20260709-499c5a, which is why it ran ~20x slower than its peers.
  */
 const MIBERA = "0x6666397DFe9a8c469BF65dc744CB1C733416c420";
 const HOLDER = "0x1111111111111111111111111111111111111111";
@@ -23,6 +29,13 @@ const post = (path: string, body: unknown) =>
       body: JSON.stringify(body),
     }),
   );
+
+beforeEach(() => {
+  stubSovereignCdn();
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("HTTP routes (via app.fetch)", () => {
   it("GET /health", async () => {

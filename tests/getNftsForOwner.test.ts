@@ -1,13 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getNftsForOwner } from '../src/inventory.js';
 import { ValidationError } from '../src/errors.js';
+import { stubSovereignCdn } from './support/sovereign-cdn-stub.js';
 
 const MIBERA_CONTRACT = '0x6666397DFe9a8c469BF65dc744CB1C733416c420';
 const ADDR_WITH_MANY = '0x1111111111111111111111111111111111111111';
 const ADDR_WITH_GRAIL = '0x2222222222222222222222222222222222222222';
 const ADDR_EMPTY = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
 
+// Per-token metadata now resolves from the sovereign storage-api (the codex
+// fixture holds 55 of 10,000 tokens), so these hermetic tests stub the CDN.
 describe('getNftsForOwner', () => {
+  beforeEach(() => {
+    stubSovereignCdn();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('returns all NFTs for address with 12 tokens (default pageSize)', async () => {
     const result = await getNftsForOwner(ADDR_WITH_MANY, MIBERA_CONTRACT);
     expect(result.nfts).toHaveLength(12);
@@ -60,7 +70,7 @@ describe('getNftsForOwner', () => {
     expect(nft.contentType).toBe('image/png');
   });
 
-  it('NFT imageUrl is set from codex fixture', async () => {
+  it('NFT imageUrl is set from the sovereign route', async () => {
     const result = await getNftsForOwner(ADDR_WITH_MANY, MIBERA_CONTRACT, { pageSize: 1 });
     const nft = result.nfts[0];
     expect(nft.imageUrl).toMatch(/^https:\/\/assets\.0xhoneyjar\.xyz\/.+\.png$/);
@@ -72,13 +82,25 @@ describe('getNftsForOwner', () => {
     expect(nft.name).toMatch(/^Mibera #\d+$/);
   });
 
-  it('grail NFT has Grail attribute', async () => {
+  // The codex models a grail twice: generative traits in miberas.jsonl, and a
+  // curated art record in grails.jsonl whose `attributes` the sovereign route
+  // renders verbatim. Grail identity is `tier: Grail` — the old
+  // {trait_type:'Grail', value:'true'} was an inventory-api synthesis present in
+  // neither codex file nor the CDN.
+  it('grail NFT is identified by the codex tier attribute', async () => {
     const result = await getNftsForOwner(ADDR_WITH_GRAIL, MIBERA_CONTRACT);
     const grailNft = result.nfts.find((n) => n.tokenId === '2769');
     expect(grailNft).toBeDefined();
-    const grailAttr = grailNft!.attributes.find((a) => a.trait_type === 'Grail');
-    expect(grailAttr).toBeDefined();
-    expect(grailAttr!.value).toBe('true');
+    const tier = grailNft!.attributes.find((a) => a.trait_type === 'tier');
+    expect(tier).toBeDefined();
+    expect(tier!.value).toBe('Grail');
+  });
+
+  it('grail NFT contentType tracks its actual image format (.webp, not image/png)', async () => {
+    const result = await getNftsForOwner(ADDR_WITH_GRAIL, MIBERA_CONTRACT);
+    const grailNft = result.nfts.find((n) => n.tokenId === '2769');
+    expect(grailNft!.imageUrl).toMatch(/\.webp$/);
+    expect(grailNft!.contentType).toBe('image/webp');
   });
 
   it('grail NFT uses grail name from grail record', async () => {

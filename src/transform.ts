@@ -75,29 +75,58 @@ export function codexToMetadataDocument(
   };
 }
 
-export function codexToNFT(
-  tokenId: string,
-  record: CodexRecord,
-  imageUrl: string,
-  isGrailToken: boolean,
-  grailRecord: GrailRecord | null
-): NFT {
-  const doc = codexToMetadataDocument(tokenId, record, imageUrl, isGrailToken, grailRecord);
-  return metadataDocumentToNFT(tokenId, doc, "image/png");
+// NOTE: `codexToNFT` lived here. It was reachable only from getNftsForOwner's codex
+// join — the defect in bug 20260709-499c5a — and became unreachable when owner-lists
+// moved to the sovereign resolver. Removed rather than left as dead code.
+// `codexToMetadataDocument` above is still live: getNftMetadata uses it for contracts
+// that are not in the collection registry.
+
+const CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  avif: "image/avif",
+  svg: "image/svg+xml",
+};
+
+/** Served when the URL carries no extension we recognise, or when there is no image. */
+export const DEFAULT_CONTENT_TYPE = "image/png";
+
+/**
+ * Derive `contentType` from an image URL's extension.
+ *
+ * The sovereign collections do not all serve PNG: grail art is `.webp`
+ * (`…/Mibera/grails/air.webp`) and the GIF collection is `.gif`
+ * (`…/Mibera/gif/1.gif`). A hardcoded "image/png" would ship a payload whose
+ * contentType contradicts its own imageUrl. Unknown/extensionless URLs keep the
+ * historical default rather than guessing.
+ */
+export function contentTypeForImageUrl(imageUrl: string): string {
+  const path = imageUrl.split(/[?#]/)[0] ?? "";
+  const lastDot = path.lastIndexOf(".");
+  // No dot, or the dot belongs to a directory segment rather than a filename.
+  if (lastDot <= path.lastIndexOf("/")) return DEFAULT_CONTENT_TYPE;
+  return (
+    CONTENT_TYPE_BY_EXTENSION[path.slice(lastDot + 1).toLowerCase()] ?? DEFAULT_CONTENT_TYPE
+  );
 }
 
-/** Map a plain MetadataDocument to the honeyroad NFT shape. */
-export function metadataDocumentToNFT(
-  tokenId: string,
-  doc: MetadataDocument,
-  contentType = "image/png"
-): NFT {
+/**
+ * Map a plain MetadataDocument to the honeyroad NFT shape.
+ *
+ * `contentType` is always derived from the image URL. There is deliberately no
+ * caller-pinned override: the only path that ever pinned one was `codexToNFT`,
+ * removed with the codex owner-list join (bug 20260709-499c5a).
+ */
+export function metadataDocumentToNFT(tokenId: string, doc: MetadataDocument): NFT {
   return {
     tokenId,
     name: doc.name,
     description: doc.description,
     imageUrl: doc.image,
-    contentType,
+    contentType: contentTypeForImageUrl(doc.image),
     attributes: doc.attributes,
   };
 }

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { codexToMetadataDocument, codexToNFT } from '../src/transform.js';
+import {
+  codexToMetadataDocument,
+  metadataDocumentToNFT,
+  contentTypeForImageUrl,
+} from '../src/transform.js';
 import type { CodexRecord, GrailRecord } from '../src/types-internal.js';
 
 // Real Mibera codex token #1 (mibera-codex/_codex/data/miberas.jsonl).
@@ -103,31 +107,79 @@ describe('codexToMetadataDocument', () => {
   });
 });
 
-describe('codexToNFT', () => {
-  it('maps image -> imageUrl correctly', () => {
-    const nft = codexToNFT('1', baseRecord, imageUrl, false, null);
+// `codexToNFT` was removed with getNftsForOwner's codex join (bug 20260709-499c5a).
+// Its coverage is replaced by direct tests of the two functions that now carry the
+// mapping: metadataDocumentToNFT, and the contentType derivation it depends on.
+describe('metadataDocumentToNFT', () => {
+  const doc = {
+    name: 'Mibera #1',
+    description: 'a description',
+    image: imageUrl,
+    attributes: [{ trait_type: 'archetype', value: 'Freetekno' }],
+  };
+
+  it('maps image -> imageUrl and drops the image key', () => {
+    const nft = metadataDocumentToNFT('1', doc);
     expect(nft.imageUrl).toBe(imageUrl);
     expect(nft).not.toHaveProperty('image');
   });
 
-  it('contentType is image/png', () => {
-    const nft = codexToNFT('1', baseRecord, imageUrl, false, null);
-    expect(nft.contentType).toBe('image/png');
-  });
-
-  it('tokenId is passed through', () => {
-    const nft = codexToNFT('1', baseRecord, imageUrl, false, null);
+  it('passes tokenId, name, description and attributes through', () => {
+    const nft = metadataDocumentToNFT('1', doc);
     expect(nft.tokenId).toBe('1');
-  });
-
-  it('name comes from codexToMetadataDocument', () => {
-    const nft = codexToNFT('1', baseRecord, imageUrl, false, null);
     expect(nft.name).toBe('Mibera #1');
+    expect(nft.description).toBe('a description');
+    expect(nft.attributes).toEqual(doc.attributes);
   });
 
-  it('attributes are same as metadata document', () => {
-    const nft = codexToNFT('1', baseRecord, imageUrl, false, null);
-    const doc = codexToMetadataDocument('1', baseRecord, imageUrl, false, null);
-    expect(nft.attributes).toEqual(doc.attributes);
+  it('always derives contentType from the image URL', () => {
+    expect(metadataDocumentToNFT('1', doc).contentType).toBe('image/png');
+    expect(metadataDocumentToNFT('1', { ...doc, image: 'https://x/a.webp' }).contentType).toBe(
+      'image/webp'
+    );
+    expect(metadataDocumentToNFT('1', { ...doc, image: 'https://x/a.gif' }).contentType).toBe(
+      'image/gif'
+    );
+  });
+});
+
+describe('contentTypeForImageUrl', () => {
+  it.each([
+    ['https://assets.0xhoneyjar.xyz/reveal_phase8/images/abc.png', 'image/png'],
+    ['https://assets.0xhoneyjar.xyz/reveal_phase8/images/air.PNG', 'image/png'],
+    ['https://assets.0xhoneyjar.xyz/Mibera/grails/air.webp', 'image/webp'],
+    ['https://assets.0xhoneyjar.xyz/Mibera/gif/1.gif', 'image/gif'],
+    ['https://x/a.jpg', 'image/jpeg'],
+    ['https://x/a.jpeg', 'image/jpeg'],
+    ['https://x/a.avif', 'image/avif'],
+    ['https://x/a.svg', 'image/svg+xml'],
+  ])('maps %s -> %s', (url, expected) => {
+    expect(contentTypeForImageUrl(url)).toBe(expected);
+  });
+
+  // The real codex serves `air.PNG`, but an uppercase *png* cannot prove the
+  // case-folding works: without `.toLowerCase()` it falls back to image/png, which
+  // is the expected value anyway. Only an uppercase NON-png extension discriminates.
+  it.each([
+    ['https://x/a.WEBP', 'image/webp'],
+    ['https://x/a.GIF', 'image/gif'],
+    ['https://x/a.JpEg', 'image/jpeg'],
+  ])('folds extension case: %s -> %s', (url, expected) => {
+    expect(contentTypeForImageUrl(url)).toBe(expected);
+  });
+
+  it('ignores query strings and fragments', () => {
+    expect(contentTypeForImageUrl('https://x/a.webp?v=2')).toBe('image/webp');
+    expect(contentTypeForImageUrl('https://x/a.gif#frag')).toBe('image/gif');
+  });
+
+  it('falls back for an unknown extension, no extension, or empty url', () => {
+    expect(contentTypeForImageUrl('https://x/a.tiff')).toBe('image/png');
+    expect(contentTypeForImageUrl('https://x/noextension')).toBe('image/png');
+    expect(contentTypeForImageUrl('')).toBe('image/png');
+  });
+
+  it('does not mistake a dot in a directory segment for an extension', () => {
+    expect(contentTypeForImageUrl('https://x/v1.2/image')).toBe('image/png');
   });
 });

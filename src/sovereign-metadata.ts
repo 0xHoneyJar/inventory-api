@@ -34,6 +34,92 @@ const METADATA_FETCH_TIMEOUT_MS = Number(
   process.env.METADATA_FETCH_TIMEOUT_MS ?? 8000
 );
 
+// Owner-list resolution fans out one fetch per token, up to a 100-token page.
+// Bound the in-flight count so a SINGLE inbound request cannot burst the origin.
+//
+// This is a PER-REQUEST cap, not a process-global semaphore: N concurrent inbound
+// requests still open up to 8N sockets to the origin, and the service has no inbound
+// rate limit or metadata cache. That gap is pre-existing (the external owner-list
+// previously fanned out UNBOUNDED, up to 100 concurrent) and is tracked separately —
+// do not read this constant as protecting the origin in aggregate.
+//
+// Unlike the timeout above this IS guarded: a NaN/zero limit would stall the
+// worker pool rather than merely misconfigure a deadline.
+export const METADATA_FETCH_CONCURRENCY = ((): number => {
+  const raw = Number(process.env.METADATA_FETCH_CONCURRENCY ?? 8);
+  return Number.isFinite(raw) && raw >= 1 ? Math.trunc(raw) : 8;
+})();
+
+// Wall-clock budget for resolving ONE page of metadata, shared by every token in
+// it. The per-fetch timeout above does not bound a page: a 100-token page at
+// concurrency 8 is ceil(100/8) = 13 sequential waves, so a hung origin would cost
+// 13 x 8s = 104s — far past the 30s service request timeout.
+//
+// The ceiling is NOT advisory. A budget at or above `DEFAULT_SECURITY.requestTimeoutMs`
+// (30s, src/hyper/core/security.ts) lets a hung origin OUTLIVE the inbound request: the
+// client gets a dropped request instead of a fail-soft page, while the detached handler
+// keeps holding origin sockets to budget-end — precisely the hazard this budget exists
+// to kill. So an over-large override is clamped rather than honored.
+//
+// The domain layer stays framework-free, so the budget < requestTimeoutMs relationship
+// is pinned by a test (tests/metadata-page-budget.test.ts) rather than by importing
+// hyper here. If either number moves, that test fails.
+export const METADATA_PAGE_BUDGET_MAX_MS = 25_000;
+
+export const METADATA_PAGE_BUDGET_MS = ((): number => {
+  const raw = Number(process.env.METADATA_PAGE_BUDGET_MS ?? 15_000);
+  const parsed = Number.isFinite(raw) && raw >= 1 ? Math.trunc(raw) : 15_000;
+  return Math.min(parsed, METADATA_PAGE_BUDGET_MAX_MS);
+})();
+
+/** Outcome of resolving one page of sovereign metadata. */
+export interface SovereignPageStats {
+  /** Tokens whose fetch failed with a non-NotFound error. */
+  failed: number;
+  /** Tokens never attempted because the page budget was already spent. */
+  skipped: number;
+  total: number;
+}
+
+/**
+ * A page of metadata came back degraded — 5xx, timeout, or network failure.
+ *
+ * This is NOT the same as a token having no metadata (403 unminted / 404 absent
+ * → `NotFoundError`, which is expected and silent). Both fail-soft to imageless
+ * NFTs so one bad token cannot fail a whole page, which makes this warning the
+ * ONLY signal separating a degraded origin from legitimately absent tokens.
+ * Without it, a CDN outage presents exactly like the fixture-miss defect this
+ * path replaced: silent blank images and a null profile picture.
+ *
+ * Emitted once per page, not once per token — a 100-token page against a down
+ * origin would otherwise flood the log with 100 identical lines.
+ */
+export function warnSovereignMetadataDegraded(
+  label: string,
+  stats: SovereignPageStats,
+  err?: unknown
+): void {
+  const summary =
+    `[inventory-api] sovereign metadata ${label} degraded; ` +
+    `${stats.failed} failed, ${stats.skipped} skipped of ${stats.total} token(s); ` +
+    `returning imageless NFTs`;
+
+  // The page budget can expire while every ATTEMPTED fetch succeeded, leaving tokens
+  // skipped but no error to report. Say so, rather than stringifying `undefined`.
+  if (err === undefined) {
+    console.warn(`${summary} \u2014 page budget exhausted`);
+    return;
+  }
+
+  const detail = err instanceof Error ? err.message : String(err);
+  console.warn(
+    summary,
+    // Upstream-derived text: collapse line breaks so a hostile origin cannot forge
+    // or split log lines (CWE-117), and cap the length.
+    detail.replace(/[\r\n\u2028\u2029]+/g, " ").slice(0, 300)
+  );
+}
+
 // Sovereign collection slugs must be a stable, path-safe identifier (the slug is a
 // URL path component). Constrain it so a malformed/hostile slug can't escape the
 // route. Registered slugs today: "mst", "candies", "tarot", "gif", "fractures".
@@ -122,7 +208,7 @@ async function fetchSovereignMetadataImpl(
   collectionSlug: string | null,
   contract: string,
   tokenId: string,
-  options: { numericTokenId?: boolean } = {}
+  options: { numericTokenId?: boolean; signal?: AbortSignal } = {}
 ): Promise<MetadataDocument> {
   const requireNumeric = options.numericTokenId ?? world === "mibera";
   if (requireNumeric && !/^\d+$/.test(tokenId)) {
@@ -132,10 +218,15 @@ async function fetchSovereignMetadataImpl(
   const url = sovereignMetadataUrlImpl(world, collectionSlug, tokenId);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), METADATA_FETCH_TIMEOUT_MS);
+  // Abort on whichever fires first: this token's own timeout, or the caller's
+  // page-wide budget (so a hung origin cannot cost timeout x number-of-waves).
+  const signal = options.signal
+    ? AbortSignal.any([controller.signal, options.signal])
+    : controller.signal;
   try {
     let res: Response;
     try {
-      res = await fetch(url, { signal: controller.signal });
+      res = await fetch(url, { signal });
     } catch (cause) {
       // Network failure OR timeout-abort both land here (AbortError on timeout) —
       // surfaced as a clear throw; the downstream consumer fail-softs to imageless.
@@ -209,14 +300,14 @@ export async function fetchSovereignMetadata(
   collectionSlug: string | null,
   contract: string,
   tokenId: string,
-  options?: { numericTokenId?: boolean }
+  options?: { numericTokenId?: boolean; signal?: AbortSignal }
 ): Promise<MetadataDocument>;
 export async function fetchSovereignMetadata(
   worldOrSlug: string,
   slugOrContract: string | null,
   contractOrTokenId: string,
   tokenIdMaybe?: string,
-  options: { numericTokenId?: boolean } = {}
+  options: { numericTokenId?: boolean; signal?: AbortSignal } = {}
 ): Promise<MetadataDocument> {
   if (tokenIdMaybe === undefined) {
     return fetchSovereignMetadataImpl(

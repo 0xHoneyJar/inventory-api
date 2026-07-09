@@ -2,7 +2,11 @@ import * as sonarClient from "./sonar-client.js";
 import * as codexClient from "./codex-client.js";
 import * as liveSonar from "./live-sonar.js";
 import * as svmSonarClient from "./svm-sonar-client.js";
-import { codexToNFT, codexToMetadataDocument, metadataDocumentToNFT } from "./transform.js";
+import {
+  codexToMetadataDocument,
+  metadataDocumentToNFT,
+  DEFAULT_CONTENT_TYPE,
+} from "./transform.js";
 import { buildEnvelope, buildEnvelopeLive } from "./completeness.js";
 import { applyPagination } from "./pagination.js";
 import {
@@ -16,7 +20,13 @@ import {
   warnSonarLiveEmpty,
 } from "./sonar-fallback.js";
 import { ValidationError, NotFoundError } from "./errors.js";
-import { fetchSovereignMetadata } from "./sovereign-metadata.js";
+import {
+  fetchSovereignMetadata,
+  warnSovereignMetadataDegraded,
+  METADATA_FETCH_CONCURRENCY,
+  METADATA_PAGE_BUDGET_MS,
+} from "./sovereign-metadata.js";
+import { mapWithConcurrency } from "./concurrency.js";
 import {
   resolveExternalCollection,
   resolveCollectionRouteParam,
@@ -127,53 +137,85 @@ export async function getHoldings(
   return { holdings, completeness };
 }
 
-function tokenIdToNFT(tokenId: string) {
-  const record = codexClient.getToken(tokenId);
-  if (!record) {
-    return {
-      tokenId,
-      name: `Mibera #${tokenId}`,
-      description: "Unknown",
-      imageUrl: "",
-      contentType: "image/png",
-      attributes: [],
-    };
-  }
-  const imageUrl = codexClient.getImageUrl(tokenId) ?? "";
-  const grailRecord = codexClient.getGrailRecord(tokenId);
-  return codexToNFT(
-    tokenId,
-    record,
-    imageUrl,
-    codexClient.isGrail(tokenId),
-    grailRecord
-  );
+interface SovereignTokenRef {
+  /** Sovereign world segment (`metadata.0xhoneyjar.xyz/{world}/…`). */
+  world: string;
+  /** Collection slug; `null` resolves the world's namesake route. */
+  slug: string | null;
+  /** Carried only to populate NotFoundError with caller-facing identity. */
+  contract: string;
+  tokenId: string;
+  numericTokenId: boolean;
+  /** Name to present when metadata cannot be resolved. */
+  fallbackName: string;
 }
 
-async function externalTokenToNFT(
-  col: ExternalCollection,
-  tokenId: string,
-  fallbackName: string | null
-): Promise<NFT> {
-  try {
-    const doc = await fetchSovereignMetadata(
-      col.metadataWorld,
-      col.metadataSlug,
-      col.id,
-      tokenId,
-      { numericTokenId: col.vm === "evm" }
-    );
-    return metadataDocumentToNFT(tokenId, doc);
-  } catch {
-    return {
-      tokenId,
-      name: fallbackName ?? tokenId,
-      description: "",
-      imageUrl: "",
-      contentType: "image/png",
-      attributes: [],
-    };
+/** The fail-soft payload: a real tokenId with no renderable metadata. */
+function imagelessNFT(ref: SovereignTokenRef): NFT {
+  return {
+    tokenId: ref.tokenId,
+    name: ref.fallbackName,
+    description: "",
+    imageUrl: "",
+    contentType: DEFAULT_CONTENT_TYPE,
+    attributes: [],
+  };
+}
+
+/**
+ * Resolve one page of tokens against the sovereign storage-api.
+ *
+ * Fail-soft per token — one unresolvable token must not fail the whole page. The
+ * two failure classes are NOT collapsed:
+ *
+ *   - `NotFoundError` (403 unminted / 404 absent) — the token legitimately has no
+ *     metadata. Expected, and silent.
+ *   - anything else (5xx, timeout, network) — upstream is degraded. Counted, and
+ *     warned about exactly once for the page. Both return an imageless NFT, so
+ *     that one log line is the only thing that tells the two apart.
+ *
+ * Bounded twice over: `METADATA_FETCH_CONCURRENCY` caps sockets opened at once,
+ * and `METADATA_PAGE_BUDGET_MS` caps the page's total wall time. The per-fetch
+ * timeout alone would not — 13 waves x 8s = 104s, past the 30s service timeout.
+ */
+async function resolveSovereignPage(
+  refs: SovereignTokenRef[],
+  label: string
+): Promise<NFT[]> {
+  if (refs.length === 0) return [];
+
+  const pageBudget = AbortSignal.timeout(METADATA_PAGE_BUDGET_MS);
+  let failed = 0;
+  let skipped = 0;
+  let firstError: unknown;
+
+  const nfts = await mapWithConcurrency(refs, METADATA_FETCH_CONCURRENCY, async (ref) => {
+    // The budget is already spent — don't open a socket just to have it aborted.
+    if (pageBudget.aborted) {
+      skipped += 1;
+      return imagelessNFT(ref);
+    }
+    try {
+      const doc = await fetchSovereignMetadata(
+        ref.world,
+        ref.slug,
+        ref.contract,
+        ref.tokenId,
+        { numericTokenId: ref.numericTokenId, signal: pageBudget }
+      );
+      return metadataDocumentToNFT(ref.tokenId, doc);
+    } catch (err) {
+      if (err instanceof NotFoundError) return imagelessNFT(ref);
+      failed += 1;
+      if (firstError === undefined) firstError = err;
+      return imagelessNFT(ref);
+    }
+  });
+
+  if (failed > 0 || skipped > 0) {
+    warnSovereignMetadataDegraded(label, { failed, skipped, total: refs.length }, firstError);
   }
+  return nfts;
 }
 
 async function getExternalNftsForOwner(
@@ -232,8 +274,16 @@ async function getExternalNftsForOwner(
     options.pageKey
   );
 
-  const nfts = await Promise.all(
-    page.map((tokenId) => externalTokenToNFT(col, tokenId, nameByTokenId.get(tokenId) ?? null))
+  const nfts = await resolveSovereignPage(
+    page.map((tokenId) => ({
+      world: col.metadataWorld,
+      slug: col.metadataSlug,
+      contract: col.id,
+      tokenId,
+      numericTokenId: col.vm === "evm",
+      fallbackName: nameByTokenId.get(tokenId) ?? tokenId,
+    })),
+    col.metadataSlug ?? col.metadataWorld
   );
 
   return {
@@ -261,6 +311,8 @@ export async function getNftsForOwner(
   if (!isRegisteredMiberaContract(checksummedContract)) {
     throw new ValidationError("contract", contract, "registered collection address");
   }
+  // Guarded above: a registered contract always resolves to a registry row.
+  const entry = resolveCollectionRouteParam(checksummedContract)!;
   const chainId = MIBERA_CHAIN_ID;
 
   let tokenIds: string[];
@@ -284,15 +336,40 @@ export async function getNftsForOwner(
     options.pageKey
   );
 
-  const nfts = page.map(tokenIdToNFT);
+  // Per-token metadata resolves through the SAME strategy resolver getNftMetadata
+  // uses. The bundled codex fixture carries 55 of 10,000 tokens, so joining
+  // against it silently blanked ~99.5% of real holdings (bug 20260709-499c5a).
+  const strategy = entry.metadataStrategy;
+  if (strategy.kind === "codex") {
+    // Unreachable today: every registered non-external row is sovereign or
+    // sovereign-world. Guard rather than fall through to the namesake route with the
+    // wrong URL shape — and never resolve an owner-list against the codex fixture again.
+    throw new Error(
+      `registry row ${entry.id} declares metadataStrategy "codex", unsupported by getNftsForOwner`
+    );
+  }
+  const slug = strategy.kind === "sovereign" ? strategy.slug : null;
 
-  const collectionMeta = codexClient.getCollectionMeta(checksummedContract);
+  const nfts = await resolveSovereignPage(
+    page.map((tokenId) => ({
+      world: entry.worldSlug,
+      slug,
+      contract: checksummedContract,
+      tokenId,
+      numericTokenId: entry.chain === "evm",
+      fallbackName: `${entry.name} #${tokenId}`,
+    })),
+    slug ?? entry.worldSlug
+  );
 
+  // Collection identity comes from the registry, not the codex fixture — whose
+  // `collection` block only describes Mibera-main, so every other registered
+  // sovereign collection previously threw a 400 here.
   return {
     contractAddress: checksummedContract,
-    name: collectionMeta.name,
-    symbol: collectionMeta.symbol,
-    totalSupply: collectionMeta.totalSupply,
+    name: entry.name,
+    symbol: entry.symbol,
+    totalSupply: entry.totalSupply,
     nfts,
     pageKey: nextPageKey,
   };

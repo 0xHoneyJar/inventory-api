@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { app, buildOpenAPI, buildMCPManifest } from "../src/app.js";
+import { stubSovereignCdn } from "./support/sovereign-cdn-stub.js";
 
 /**
  * HTTP + MCP route tests for GET /profile/:address (the getProfilePicture
@@ -17,6 +18,11 @@ const BASE = "http://localhost";
 const get = (path: string) => app.fetch(new Request(`${BASE}${path}`));
 
 describe("HTTP route GET /profile/:address (via app.fetch)", () => {
+  // Mibera pfp resolution reads the sovereign metadata route; serve it from the
+  // committed fixture. The pythenians case below installs its own stub over this.
+  beforeEach(() => {
+    stubSovereignCdn();
+  });
   afterEach(() => {
     vi.unstubAllGlobals();
   });

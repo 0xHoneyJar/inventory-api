@@ -83,5 +83,43 @@ describe("getNftsForOwner — external collections (issue #19)", () => {
     const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
     expect(result.nfts[0].imageUrl).toBe("");
     expect(result.nfts[0].name).toBe("Pythenians #3180");
+    // No image resolved -> the default, not a guess from an empty string.
+    expect(result.nfts[0].contentType).toBe("image/png");
+  });
+
+  // The external path shares resolveSovereignPage with the Mibera path, so its
+  // contentType is now DERIVED from the image URL rather than hardcoded "image/png".
+  // Pythenians art is .png (unchanged), but purupuru's is .webp — previously the
+  // payload claimed image/png while serving a .webp, which this fixes.
+  it("derives contentType from the image extension on the external path", async () => {
+    vi.stubGlobal("fetch", async () =>
+      new Response(
+        JSON.stringify({
+          name: "Purupuru #1",
+          description: "",
+          image: "https://assets.0xhoneyjar.xyz/purupuru/1.webp",
+          attributes: [],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
+    expect(result.nfts[0].imageUrl).toMatch(/\.webp$/);
+    expect(result.nfts[0].contentType).toBe("image/webp");
+  });
+
+  it("keeps contentType image/png for .png external art (pythenians)", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      expect(url).toBe(sovereignMetadataUrl("pythenians", "pythians", PYTHIANS_MINT));
+      return new Response(JSON.stringify(pytheniansMetadataFixture[PYTHIANS_MINT]), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
+    expect(result.nfts[0].imageUrl).toMatch(/\.png$/);
+    expect(result.nfts[0].contentType).toBe("image/png");
   });
 });

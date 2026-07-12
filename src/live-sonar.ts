@@ -23,13 +23,13 @@ export function isLiveMode(): boolean {
   return endpoint() !== undefined;
 }
 
-async function query<T>(gql: string): Promise<T> {
+async function query<T>(gql: string, variables?: Record<string, unknown>): Promise<T> {
   const ep = endpoint();
   if (!ep) throw new Error("SONAR_GRAPHQL_ENDPOINT not set");
   const res = await fetch(ep, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: gql }),
+    body: JSON.stringify(variables ? { query: gql, variables } : { query: gql }),
   });
   if (!res.ok) throw new Error(`sonar HTTP ${res.status}`);
   const body = (await res.json()) as { data?: T; errors?: unknown };
@@ -121,6 +121,44 @@ export interface LiveCandiesBalance {
  * the documented-but-unconfirmed shape.
  */
 const CANDIES_HOLDER_FILTER_FIELD = "holder_id";
+
+/** One SVM collection NFT row owned by a wallet (current-state index). */
+export interface SvmOwnedNft {
+  nftMint: string;
+  name: string | null;
+}
+
+const LIVE_SVM_NFTS_QUERY = `
+  query LiveSvmNftsForOwner($owner: String!, $collectionKey: String!) {
+    svm_collection_nft(
+      where: { collection_key: { _eq: $collectionKey }, owner: { _eq: $owner } }
+    ) {
+      nft_mint
+      name
+    }
+  }
+`;
+
+/**
+ * A holder's current SVM NFTs for a collection — the `svm_collection_nft` entity
+ * published by the belt-gateway (Pythenians / external communities).
+ *
+ * Ownership filter uses the gateway owner field (case-sensitive base58). Metadata
+ * sources (ME/DAS) are NOT used for ownership — only for one-time onboarding.
+ */
+export async function liveSvmNftsForOwner(
+  owner: string,
+  collectionKey: string
+): Promise<SvmOwnedNft[]> {
+  const d = await query<{ svm_collection_nft: { nft_mint: string; name: string | null }[] }>(
+    LIVE_SVM_NFTS_QUERY,
+    { owner, collectionKey }
+  );
+  return d.svm_collection_nft.map((row) => ({
+    nftMint: row.nft_mint,
+    name: row.name,
+  }));
+}
 
 export async function liveCandiesBalances(
   address: string

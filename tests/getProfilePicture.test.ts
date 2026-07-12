@@ -1,11 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getProfilePicture } from '../src/inventory.js';
+import { stubSovereignCdn } from './support/sovereign-cdn-stub.js';
 
 // Fixture holders (mirrors getNftsForOwner.test.ts).
 const ADDR_WITH_MANY = '0x1111111111111111111111111111111111111111';
 const ADDR_EMPTY = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
 
+// getProfilePicture reads the first NFT of the owner-list, whose metadata now
+// resolves over the sovereign route — stub it to keep this suite offline.
 describe('getProfilePicture', () => {
+  beforeEach(() => {
+    stubSovereignCdn();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('returns a real NFT image url for a holder who owns NFTs', async () => {
     const pfp = await getProfilePicture(ADDR_WITH_MANY);
     expect(pfp).toBeTruthy();

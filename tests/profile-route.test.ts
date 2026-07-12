@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { app, buildOpenAPI, buildMCPManifest } from "../src/app.js";
+import { stubSovereignCdn } from "./support/sovereign-cdn-stub.js";
 
 /**
  * HTTP + MCP route tests for GET /profile/:address (the getProfilePicture
@@ -11,11 +12,21 @@ import { app, buildOpenAPI, buildMCPManifest } from "../src/app.js";
 const MIBERA = "0x6666397DFe9a8c469BF65dc744CB1C733416c420";
 const HOLDER = "0x1111111111111111111111111111111111111111"; // fixture holder (owns NFTs)
 const EMPTY = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"; // holds nothing renderable
+const PYTHIANS_HOLDER = "HdLiAKti95C7eNK78bfPEKbUrSP1roZgWxDnsbyWXour";
 const BASE = "http://localhost";
 
 const get = (path: string) => app.fetch(new Request(`${BASE}${path}`));
 
 describe("HTTP route GET /profile/:address (via app.fetch)", () => {
+  // Mibera pfp resolution reads the sovereign metadata route; serve it from the
+  // committed fixture. The pythenians case below installs its own stub over this.
+  beforeEach(() => {
+    stubSovereignCdn();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("happy path: a holder returns a real imageUrl string in the envelope", async () => {
     const res = await get(`/profile/${HOLDER}`);
     expect(res.status).toBe(200);
@@ -69,6 +80,27 @@ describe("HTTP route GET /profile/:address (via app.fetch)", () => {
     expect(body.contract).toBe(MIBERA);
     expect(typeof body.imageUrl).toBe("string");
     expect((body.imageUrl as string).length).toBeGreaterThan(0);
+  });
+
+  it("pythenians: SVM holder + ?contract=pythians returns imageUrl when metadata resolves", async () => {
+    vi.stubGlobal("fetch", async () =>
+      new Response(
+        JSON.stringify({
+          name: "Pythenians #3180",
+          description: "",
+          image: "https://ipfs.pythenians.xyz/nft/example3180.png",
+          attributes: [],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    const res = await get(`/profile/${PYTHIANS_HOLDER}?contract=pythians`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.address).toBe(PYTHIANS_HOLDER);
+    expect(body.contract).toBe("pythians");
+    expect(body.imageUrl).toBe("https://ipfs.pythenians.xyz/nft/example3180.png");
   });
 });
 

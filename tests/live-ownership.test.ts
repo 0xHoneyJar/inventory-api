@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getHoldings, getNftsForOwner } from '../src/inventory.js';
+import { sovereignCdnResponse } from './support/sovereign-cdn-stub.js';
 import {
   liveOwnerTokenIds,
   liveCandiesBalances,
@@ -37,8 +38,13 @@ function makeFetchStub(opts: {
     failTokenIndex = false,
     capture,
   } = opts;
-  return async (_url: string, init: { body: string }) => {
-    const { query: gql } = JSON.parse(init.body) as { query: string };
+  return async (_url: string, init?: { body?: string }) => {
+    // Owner-list metadata resolves over the sovereign CDN, which is a bodiless
+    // GET — serve it from the fixture before touching the GraphQL envelope.
+    const cdn = sovereignCdnResponse(String(_url));
+    if (cdn) return cdn;
+
+    const { query: gql } = JSON.parse(init!.body!) as { query: string };
     capture?.(gql);
     const data: Record<string, unknown> = {};
     if (gql.includes('chain_metadata')) {
@@ -180,7 +186,8 @@ describe('live ownership (DEP-2, hermetic via fetch stub)', () => {
       const ids = col.nfts.map((n) => n.tokenId);
       expect(ids).toContain('1');
       expect(ids).toContain('2769');
-      // Codex join still works: token 1 is a real generative record.
+      // Metadata comes from the sovereign route (served here from
+      // fixtures/sovereign-mibera-metadata.json), not the codex fixture.
       const gen = col.nfts.find((n) => n.tokenId === '1');
       expect(gen!.name).toBe('Mibera #1');
       expect(gen!.attributes.length).toBeGreaterThanOrEqual(10);

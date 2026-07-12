@@ -34,33 +34,146 @@ const METADATA_FETCH_TIMEOUT_MS = Number(
   process.env.METADATA_FETCH_TIMEOUT_MS ?? 8000
 );
 
+// Owner-list resolution fans out one fetch per token, up to a 100-token page.
+// Bound the in-flight count so a SINGLE inbound request cannot burst the origin.
+//
+// This is a PER-REQUEST cap, not a process-global semaphore: N concurrent inbound
+// requests still open up to 8N sockets to the origin, and the service has no inbound
+// rate limit or metadata cache. That gap is pre-existing (the external owner-list
+// previously fanned out UNBOUNDED, up to 100 concurrent) and is tracked separately —
+// do not read this constant as protecting the origin in aggregate.
+//
+// Unlike the timeout above this IS guarded: a NaN/zero limit would stall the
+// worker pool rather than merely misconfigure a deadline.
+export const METADATA_FETCH_CONCURRENCY = ((): number => {
+  const raw = Number(process.env.METADATA_FETCH_CONCURRENCY ?? 8);
+  return Number.isFinite(raw) && raw >= 1 ? Math.trunc(raw) : 8;
+})();
+
+// Wall-clock budget for resolving ONE page of metadata, shared by every token in
+// it. The per-fetch timeout above does not bound a page: a 100-token page at
+// concurrency 8 is ceil(100/8) = 13 sequential waves, so a hung origin would cost
+// 13 x 8s = 104s — far past the 30s service request timeout.
+//
+// The ceiling is NOT advisory. A budget at or above `DEFAULT_SECURITY.requestTimeoutMs`
+// (30s, src/hyper/core/security.ts) lets a hung origin OUTLIVE the inbound request: the
+// client gets a dropped request instead of a fail-soft page, while the detached handler
+// keeps holding origin sockets to budget-end — precisely the hazard this budget exists
+// to kill. So an over-large override is clamped rather than honored.
+//
+// The domain layer stays framework-free, so the budget < requestTimeoutMs relationship
+// is pinned by a test (tests/metadata-page-budget.test.ts) rather than by importing
+// hyper here. If either number moves, that test fails.
+export const METADATA_PAGE_BUDGET_MAX_MS = 25_000;
+
+export const METADATA_PAGE_BUDGET_MS = ((): number => {
+  const raw = Number(process.env.METADATA_PAGE_BUDGET_MS ?? 15_000);
+  const parsed = Number.isFinite(raw) && raw >= 1 ? Math.trunc(raw) : 15_000;
+  return Math.min(parsed, METADATA_PAGE_BUDGET_MAX_MS);
+})();
+
+/** Outcome of resolving one page of sovereign metadata. */
+export interface SovereignPageStats {
+  /** Tokens whose fetch failed with a non-NotFound error. */
+  failed: number;
+  /** Tokens never attempted because the page budget was already spent. */
+  skipped: number;
+  total: number;
+}
+
+/**
+ * A page of metadata came back degraded — 5xx, timeout, or network failure.
+ *
+ * This is NOT the same as a token having no metadata (403 unminted / 404 absent
+ * → `NotFoundError`, which is expected and silent). Both fail-soft to imageless
+ * NFTs so one bad token cannot fail a whole page, which makes this warning the
+ * ONLY signal separating a degraded origin from legitimately absent tokens.
+ * Without it, a CDN outage presents exactly like the fixture-miss defect this
+ * path replaced: silent blank images and a null profile picture.
+ *
+ * Emitted once per page, not once per token — a 100-token page against a down
+ * origin would otherwise flood the log with 100 identical lines.
+ */
+export function warnSovereignMetadataDegraded(
+  label: string,
+  stats: SovereignPageStats,
+  err?: unknown
+): void {
+  const summary =
+    `[inventory-api] sovereign metadata ${label} degraded; ` +
+    `${stats.failed} failed, ${stats.skipped} skipped of ${stats.total} token(s); ` +
+    `returning imageless NFTs`;
+
+  // The page budget can expire while every ATTEMPTED fetch succeeded, leaving tokens
+  // skipped but no error to report. Say so, rather than stringifying `undefined`.
+  if (err === undefined) {
+    console.warn(`${summary} \u2014 page budget exhausted`);
+    return;
+  }
+
+  const detail = err instanceof Error ? err.message : String(err);
+  console.warn(
+    summary,
+    // Upstream-derived text: collapse line breaks so a hostile origin cannot forge
+    // or split log lines (CWE-117), and cap the length.
+    detail.replace(/[\r\n\u2028\u2029]+/g, " ").slice(0, 300)
+  );
+}
+
 // Sovereign collection slugs must be a stable, path-safe identifier (the slug is a
 // URL path component). Constrain it so a malformed/hostile slug can't escape the
 // route. Registered slugs today: "mst", "candies", "tarot", "gif", "fractures".
 const SLUG_RE = /^[a-z0-9-]+$/;
 
-/**
- * Sovereign storage-api URL for a token's metadata in a given collection.
- *
- * `collectionSlug === null` resolves the WORLD'S NAMESAKE collection (Mibera-main):
- * the resolver's `/{world}/{tokenId}` shape — NO collection path segment, routed by
- * the `mibera:current_version` KVS pointer (vs `mibera/{slug}:current_version` for
- * siblings). A non-null slug is a sibling collection (mst, candies, …).
- */
-export function sovereignMetadataUrl(
+function sovereignMetadataUrlImpl(
+  world: string,
   collectionSlug: string | null,
   tokenId: string
 ): string {
+  if (!SLUG_RE.test(world)) {
+    throw new ValidationError("world", world, "lowercase slug [a-z0-9-]");
+  }
+  const encodedToken = encodeURIComponent(tokenId);
   if (collectionSlug === null) {
-    return `${METADATA_BASE}/mibera/${encodeURIComponent(tokenId)}`;
+    return `${METADATA_BASE}/${encodeURIComponent(world)}/${encodedToken}`;
   }
   if (!SLUG_RE.test(collectionSlug)) {
     throw new ValidationError("collectionSlug", collectionSlug, "lowercase slug [a-z0-9-]");
   }
-  // Caller (getNftMetadata) already validates tokenId `^\d+$`, but encode both
-  // path components defensively so this helper is safe in isolation (no
-  // path-injection if reused elsewhere).
-  return `${METADATA_BASE}/mibera/${encodeURIComponent(collectionSlug)}/${encodeURIComponent(tokenId)}`;
+  return `${METADATA_BASE}/${encodeURIComponent(world)}/${encodeURIComponent(collectionSlug)}/${encodedToken}`;
+}
+
+/**
+ * Sovereign storage-api URL for a token's metadata in a given world + collection.
+ *
+ * Mibera back-compat (2-arg): `sovereignMetadataUrl("candies", tokenId)` →
+ *   `/mibera/candies/{tokenId}`
+ *
+ * General form (3-arg): `sovereignMetadataUrl(world, collectionSlug, tokenId)`
+ *
+ * `collectionSlug === null` with `world === "mibera"` resolves the WORLD'S NAMESAKE
+ * collection (Mibera-main): `/{world}/{tokenId}` — NO collection path segment.
+ */
+export function sovereignMetadataUrl(collectionSlug: string, tokenId: string): string;
+export function sovereignMetadataUrl(
+  world: string,
+  collectionSlug: string | null,
+  tokenId: string
+): string;
+export function sovereignMetadataUrl(
+  worldOrSlug: string,
+  slugOrTokenId: string | null,
+  tokenIdMaybe?: string
+): string {
+  if (tokenIdMaybe === undefined) {
+    return sovereignMetadataUrlImpl("mibera", worldOrSlug, slugOrTokenId as string);
+  }
+  return sovereignMetadataUrlImpl(worldOrSlug, slugOrTokenId, tokenIdMaybe);
+}
+
+/** Back-compat: Mibera-world namesake route (`/mibera/{tokenId}`). */
+export function miberaNamesakeMetadataUrl(tokenId: string): string {
+  return sovereignMetadataUrlImpl("mibera", null, tokenId);
 }
 
 /**
@@ -68,7 +181,7 @@ export function sovereignMetadataUrl(
  * Back-compat thin alias — MST is the sovereign slug "mst".
  */
 export function mstMetadataUrl(tokenId: string): string {
-  return sovereignMetadataUrl("mst", tokenId);
+  return sovereignMetadataUrlImpl("mibera", "mst", tokenId);
 }
 
 // Cap mapped attributes — a buggy/hostile upstream returning a giant array must
@@ -90,40 +203,30 @@ function mapAttributes(raw: unknown): Attribute[] {
   });
 }
 
-/**
- * Resolve a token's metadata from the sovereign storage-api, by collection slug.
- *
- * - 403 (unminted) / 404 (absent): throws NotFoundError, mirroring the existing
- *   not-found semantics so callers treat an unminted/absent sovereign token the
- *   same as a missing codex token.
- * - other 4xx (401/429/…) / 5xx / network failure / timeout: throws a clear error
- *   (NOT swallowed here — the downstream consumer fail-softs to imageless). A
- *   throttle or auth blip is NOT collapsed into "token not found".
- * - 200: parses JSON and maps to the plain MetadataDocument interface, defensively.
- *
- * `contract` is carried through only to populate NotFoundError (caller-facing
- * identity); the route itself is keyed by `collectionSlug`.
- */
-export async function fetchSovereignMetadata(
+async function fetchSovereignMetadataImpl(
+  world: string,
   collectionSlug: string | null,
   contract: string,
-  tokenId: string
+  tokenId: string,
+  options: { numericTokenId?: boolean; signal?: AbortSignal } = {}
 ): Promise<MetadataDocument> {
-  // Enforce the numeric-token invariant at this exported boundary too (not only
-  // in getNftMetadata) so direct/future callers can't build a malformed route.
-  if (!/^\d+$/.test(tokenId)) {
+  const requireNumeric = options.numericTokenId ?? world === "mibera";
+  if (requireNumeric && !/^\d+$/.test(tokenId)) {
     throw new ValidationError("tokenId", tokenId, "numeric string");
   }
-  // Human label for error messages (null slug === the "mibera" namesake collection).
-  const label = collectionSlug ?? "mibera";
-  // sovereignMetadataUrl validates the slug (throws ValidationError on a bad one).
-  const url = sovereignMetadataUrl(collectionSlug, tokenId);
+  const label = collectionSlug ?? world;
+  const url = sovereignMetadataUrlImpl(world, collectionSlug, tokenId);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), METADATA_FETCH_TIMEOUT_MS);
+  // Abort on whichever fires first: this token's own timeout, or the caller's
+  // page-wide budget (so a hung origin cannot cost timeout x number-of-waves).
+  const signal = options.signal
+    ? AbortSignal.any([controller.signal, options.signal])
+    : controller.signal;
   try {
     let res: Response;
     try {
-      res = await fetch(url, { signal: controller.signal });
+      res = await fetch(url, { signal });
     } catch (cause) {
       // Network failure OR timeout-abort both land here (AbortError on timeout) —
       // surfaced as a clear throw; the downstream consumer fail-softs to imageless.
@@ -170,6 +273,60 @@ export async function fetchSovereignMetadata(
 }
 
 /**
+ * Resolve a token's metadata from the sovereign storage-api, by collection slug.
+ *
+ * Mibera back-compat (3-arg): `fetchSovereignMetadata("candies", contract, tokenId)`
+ *
+ * General form (4+ arg): `fetchSovereignMetadata(world, collectionSlug, contract, tokenId, options?)`
+ *
+ * - 403 (unminted) / 404 (absent): throws NotFoundError, mirroring the existing
+ *   not-found semantics so callers treat an unminted/absent sovereign token the
+ *   same as a missing codex token.
+ * - other 4xx (401/429/…) / 5xx / network failure / timeout: throws a clear error
+ *   (NOT swallowed here — the downstream consumer fail-softs to imageless). A
+ *   throttle or auth blip is NOT collapsed into "token not found".
+ * - 200: parses JSON and maps to the plain MetadataDocument interface, defensively.
+ *
+ * `contract` is carried through only to populate NotFoundError (caller-facing
+ * identity); the route itself is keyed by `collectionSlug`.
+ */
+export async function fetchSovereignMetadata(
+  collectionSlug: string,
+  contract: string,
+  tokenId: string
+): Promise<MetadataDocument>;
+export async function fetchSovereignMetadata(
+  world: string,
+  collectionSlug: string | null,
+  contract: string,
+  tokenId: string,
+  options?: { numericTokenId?: boolean; signal?: AbortSignal }
+): Promise<MetadataDocument>;
+export async function fetchSovereignMetadata(
+  worldOrSlug: string,
+  slugOrContract: string | null,
+  contractOrTokenId: string,
+  tokenIdMaybe?: string,
+  options: { numericTokenId?: boolean; signal?: AbortSignal } = {}
+): Promise<MetadataDocument> {
+  if (tokenIdMaybe === undefined) {
+    return fetchSovereignMetadataImpl(
+      "mibera",
+      worldOrSlug,
+      slugOrContract as string,
+      contractOrTokenId
+    );
+  }
+  return fetchSovereignMetadataImpl(
+    worldOrSlug,
+    slugOrContract,
+    contractOrTokenId,
+    tokenIdMaybe,
+    options
+  );
+}
+
+/**
  * Resolve MST (Mibera Shadow) metadata from the sovereign storage-api.
  * Back-compat thin alias — MST is the sovereign slug "mst". Behavior is identical
  * to the pre-generalization `fetchMstMetadata` (same timeout/abort/error-mapping/cap).
@@ -178,5 +335,5 @@ export async function fetchMstMetadata(
   contract: string,
   tokenId: string
 ): Promise<MetadataDocument> {
-  return fetchSovereignMetadata("mst", contract, tokenId);
+  return fetchSovereignMetadata("mibera", "mst", contract, tokenId);
 }

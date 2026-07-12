@@ -4,6 +4,9 @@ import { ValidationError } from "./errors.js";
 
 const ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
+/** VM family for wallet / contract address validation. */
+export type ChainType = "evm" | "svm";
+
 export function toChecksumAddress(address: string): string {
   if (!ADDRESS_REGEX.test(address)) {
     throw new ValidationError("address", address, "0x-prefixed 40-char hex string");
@@ -31,4 +34,37 @@ export function addressesMatch(a: string, b: string): boolean {
 
 export function isValidAddress(address: string): boolean {
   return ADDRESS_REGEX.test(address);
+}
+
+/** Solana base58 address (32–44 chars). Case-sensitive — never normalize case. */
+const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+export function isValidSolanaAddress(address: string): boolean {
+  return SOLANA_ADDRESS_REGEX.test(address);
+}
+
+/**
+ * Validate and normalize a wallet address for the given chain.
+ * EVM: EIP-55 checksum. SVM: base58 verbatim (case-sensitive).
+ */
+export function validateWalletAddress(
+  chain: ChainType,
+  address: string,
+  field: string
+): string {
+  if (chain === "svm") {
+    if (!isValidSolanaAddress(address)) {
+      throw new ValidationError(field, address, "Solana base58 address (32–44 chars)");
+    }
+    return address;
+  }
+  if (!isValidAddress(address)) {
+    throw new ValidationError(field, address, "0x-prefixed 40-char hex string");
+  }
+  return toChecksumAddress(address);
+}
+
+/** EVM-only gate preserved for existing call sites (holdings, mibera routes). */
+export function validateEvmAddress(address: string, field: string): string {
+  return validateWalletAddress("evm", address, field);
 }

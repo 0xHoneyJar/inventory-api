@@ -82,20 +82,20 @@ describe("HTTP route GET /profile/:address (via app.fetch)", () => {
     expect((body.imageUrl as string).length).toBeGreaterThan(0);
   });
 
-  // REWRITTEN (INV-A, 2026-07-13). This test used to stub `fetch` with an
-  // invented `image: https://ipfs.pythenians.xyz/...` document and assert the
-  // route returned it. That document does not exist: the sovereign host serves
-  // NOTHING for pythenians (probed live — /pythenians/pythians/1,
-  // /pythenians/1, /pythians/1 all 404). The test was asserting a fiction its
-  // own stub had manufactured, so it passed while every real holder rendered a
-  // grey box. The registry now declares the row `unresolved` and the route
-  // honestly returns `imageUrl: null`.
-  it("pythenians: returns imageUrl null — the row has NO working metadata source (declared)", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    // Any outbound fetch here is a bug: an `unresolved` row must not touch the
-    // network to discover what the registry already knows.
+  // REWRITTEN again (PYTH-2, 2026-07-13). The registry row moved from
+  // `{ kind: "unresolved" }` (INV-A) to `{ kind: "sonar-image" }` — a real,
+  // zero-fetch pass-through of sonar's resolved image (see
+  // src/collection-registry.ts + tests/pythenians-sonar-image.test.ts for the
+  // real-image proof). The bundled hermetic fixture used by this route test
+  // has no real DAS image data for this holder's (fake) mints, so the route
+  // still answers `imageUrl: null` here — but via the working pass-through
+  // arm finding nothing to pass through, not the declared-broken arm.
+  it("pythenians: returns imageUrl null when sonar has no image for the holder's mints, and makes NO network call", async () => {
+    // Any outbound fetch here is a bug: sonar-image must not touch the
+    // network — it only reads what the (hermetic, in this test) sonar
+    // fixture already returned.
     vi.stubGlobal("fetch", async (url: string) => {
-      throw new Error(`unresolved row must make no network call, attempted: ${String(url)}`);
+      throw new Error(`sonar-image strategy must make no network call, attempted: ${String(url)}`);
     });
 
     const res = await get(`/profile/${PYTHIANS_HOLDER}?contract=pythians`);
@@ -104,10 +104,6 @@ describe("HTTP route GET /profile/:address (via app.fetch)", () => {
     expect(body.address).toBe(PYTHIANS_HOLDER);
     expect(body.contract).toBe("pythians");
     expect(body.imageUrl).toBeNull();
-    // ...and it is NOT silent about it.
-    expect(warn).toHaveBeenCalled();
-    expect(String(warn.mock.calls[0][0])).toContain("metadata unresolved");
-    warn.mockRestore();
   });
 });
 

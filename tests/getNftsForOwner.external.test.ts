@@ -21,22 +21,21 @@ describe("getNftsForOwner — external collections (issue #19)", () => {
     vi.unstubAllGlobals();
   });
 
-  // REWRITTEN (INV-A, 2026-07-13) — this test asserted a fiction.
+  // REWRITTEN again (PYTH-2, 2026-07-13) — the row is no longer `unresolved`.
   //
-  // It stubbed `fetch` to answer the sovereign URL with
-  // `fixtures/pythenians-metadata.json`, then asserted the image FROM THAT SAME
-  // FIXTURE. A closed loop: it could only ever pass, and it proved nothing about
-  // the real seam. The real seam is empty — the sovereign host 404s on every
-  // pythenians path (probed live). Pythenians art was never ingested, so this
-  // green test sat on top of every holder rendering a grey box.
-  //
-  // The row is now declared `{ kind: "unresolved" }`: we hold no rights to
-  // mirror it, and there is nothing to proxy to (sonar's svm_collection_nft
-  // publishes no `uri`). Real ids + real names, no art, said out loud.
-  it("pythenians resolves to real ids + real NAMES with no art, and makes NO network call", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  // History: INV-A declared this row `{ kind: "unresolved" }` because sonar's
+  // svm_collection_nft published no `uri`/`image` to proxy to. PYTH-1 closed
+  // that gap (sonar now publishes the resolved `image`), so PYTH-2 flipped
+  // this row to `{ kind: "sonar-image" }` — a pure pass-through, zero fetch.
+  // The bundled hermetic fixture below has no real DAS data for these mints
+  // (fake "...Example..." mint addresses), so `image` is `null` for all
+  // three — same imageless outcome as before, but now via the working
+  // pass-through arm reading a genuinely-absent value, not the declared-
+  // broken arm. See tests/pythenians-sonar-image.test.ts for the REAL-image
+  // proof (real DAS fixture data, live-mode fetch stub).
+  it("pythenians (hermetic fixture has no image data) resolves to real ids + real NAMES with no art, and makes NO network call", async () => {
     vi.stubGlobal("fetch", async (url: string) => {
-      throw new Error(`unresolved row must make no network call, attempted: ${String(url)}`);
+      throw new Error(`sonar-image strategy must make no network call, attempted: ${String(url)}`);
     });
 
     const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
@@ -47,11 +46,10 @@ describe("getNftsForOwner — external collections (issue #19)", () => {
     expect(result.nfts[0].tokenId).toBe(PYTHIANS_MINT);
     // The name IS real — sonar publishes it (svm_collection_nft.name).
     expect(result.nfts[0].name).toBe("Pythenians #3180");
-    // The art is not, and we say so rather than inventing it.
+    // The bundled fixture has no `image` for this mint -> fail-soft imageless,
+    // same floor as every other arm. No warn: this is a working strategy that
+    // legitimately has nothing to show for THIS mint, not a declared defect.
     expect(result.nfts[0].imageUrl).toBe("");
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(String(warn.mock.calls[0][0])).toContain("metadata unresolved");
-    warn.mockRestore();
   });
 
   it("returns all pythenians for conviction-board holder in hermetic mode", async () => {
@@ -86,20 +84,20 @@ describe("getNftsForOwner — external collections (issue #19)", () => {
     expect(result.nfts).toEqual([]);
   });
 
-  it("an unresolved row still returns the DEFAULT contentType, not a guess from an empty string", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("a sonar-image row with no published image still returns the DEFAULT contentType, not a guess from an empty string", async () => {
     const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
     expect(result.nfts[0].imageUrl).toBe("");
     expect(result.nfts[0].contentType).toBe("image/png");
-    warn.mockRestore();
   });
 
   // MOVED (INV-A, 2026-07-13): two tests here proved the external path DERIVES
   // contentType from the image extension (.webp -> image/webp) rather than
   // hardcoding image/png. They used pythenians as their vehicle — but pythenians
-  // is now a declared-`unresolved` row that resolves NO image, so it can no
-  // longer carry that assertion (and purupuru, the only other sovereign external
-  // row, has no indexed holdings to resolve).
+  // (at the time) was a declared-`unresolved` row that resolved NO image, so it
+  // could not carry that assertion (and purupuru, the only other sovereign
+  // external row, has no indexed holdings to resolve). PYTH-2 later gave
+  // pythenians a real image path (sonar-image), but this coverage stayed put
+  // on Azuki rather than moving back — no need to re-churn it.
   //
   // That coverage did not disappear: it moved to the external row that DOES
   // resolve real art — Azuki, on the tokenuri/proxy path — in

@@ -322,9 +322,13 @@ async function getExternalNftsForOwner(
 
   let tokenIds: string[];
   let nameByTokenId = new Map<string, string | null>();
+  // PYTH-2: sonar's resolved image URL, keyed by mint — populated only for
+  // `col.vm === "svm"` rows. Passed straight through by the `sonar-image`
+  // strategy arm below (zero fetch of our own).
+  let imageByTokenId = new Map<string, string | null>();
 
   if (col.vm === "svm") {
-    let rows: { nftMint: string; name: string | null }[] = [];
+    let rows: { nftMint: string; name: string | null; image: string | null }[] = [];
     if (liveSonar.isLiveMode()) {
       try {
         rows = await liveSonar.liveSvmNftsForOwner(owner, col.sonarCollectionKey);
@@ -340,6 +344,7 @@ async function getExternalNftsForOwner(
     }
     tokenIds = rows.map((r) => r.nftMint);
     nameByTokenId = new Map(rows.map((r) => [r.nftMint, r.name]));
+    imageByTokenId = new Map(rows.map((r) => [r.nftMint, r.image]));
   } else {
     const evmContract = col.evmContract!;
     const checksummedContract = toChecksumAddress(evmContract);
@@ -400,6 +405,21 @@ async function getExternalNftsForOwner(
       })),
       col.metadataSlug ?? col.metadataWorld
     );
+  } else if (col.metadataStrategy.kind === "sonar-image") {
+    // PYTH-2: pure pass-through. sonar's svm_collection_nft already resolved
+    // the image (Helius DAS content.links.image) — inventory-api does ZERO
+    // network fetch here: no RPC, no Metaplex read, no IPFS call of its own.
+    // Whatever sonar published for the mint IS the imageUrl; null/absent
+    // stays imageless — same fail-soft floor as every other arm here (never
+    // invent art sonar didn't hand us).
+    nfts = page.map((tokenId) => ({
+      tokenId,
+      name: nameByTokenId.get(tokenId) ?? tokenId,
+      description: "",
+      imageUrl: imageByTokenId.get(tokenId) ?? "",
+      contentType: DEFAULT_CONTENT_TYPE,
+      attributes: [],
+    }));
   } else if (col.metadataStrategy.kind === "unresolved") {
     // Declared-broken (Pythenians today). We know there is no metadata source
     // we can actually read, so DON'T pretend: skip the network entirely and
@@ -491,11 +511,15 @@ export async function getNftsForOwner(
       `registry row ${entry.id} declares metadataStrategy "codex", unsupported by getNftsForOwner`
     );
   }
-  if (strategy.kind === "tokenuri" || strategy.kind === "unresolved") {
-    // Unreachable today: every registered "tokenuri" (Azuki) / "unresolved"
-    // (Pythenians) row is external, handled by getExternalNftsForOwner before
-    // this function is reached. Guard rather than silently fall through to the
-    // sovereign URL shape.
+  if (
+    strategy.kind === "tokenuri" ||
+    strategy.kind === "unresolved" ||
+    strategy.kind === "sonar-image"
+  ) {
+    // Unreachable today: every registered "tokenuri" (Azuki) / "unresolved" /
+    // "sonar-image" (Pythenians) row is external, handled by
+    // getExternalNftsForOwner before this function is reached. Guard rather
+    // than silently fall through to the sovereign URL shape.
     throw new Error(
       `registry row ${entry.id} declares metadataStrategy "${strategy.kind}", unsupported by ` +
         `getNftsForOwner's registered-collection path (external path only)`

@@ -126,6 +126,20 @@ const CANDIES_HOLDER_FILTER_FIELD = "holder_id";
 export interface SvmOwnedNft {
   nftMint: string;
   name: string | null;
+  /**
+   * The RESOLVED image URL sonar publishes for this mint (PYTH-1 — Helius DAS
+   * `content.links.image`). `null` when sonar has none for the mint (not yet
+   * reindexed, or DAS returned nothing). inventory-api does ZERO network
+   * fetch for SVM art: this string, when present, IS the `imageUrl` — no RPC,
+   * no Metaplex metadata-account read, no IPFS call of its own (PYTH-2).
+   */
+  image: string | null;
+  /**
+   * The metadata `json_uri` sonar publishes (Helius DAS `content.json_uri`).
+   * Carried for completeness/future use — not currently consumed by
+   * inventory-api's rendering path (`image` is).
+   */
+  uri: string | null;
 }
 
 const LIVE_SVM_NFTS_QUERY = `
@@ -135,6 +149,8 @@ const LIVE_SVM_NFTS_QUERY = `
     ) {
       nft_mint
       name
+      image
+      uri
     }
   }
 `;
@@ -150,13 +166,19 @@ export async function liveSvmNftsForOwner(
   owner: string,
   collectionKey: string
 ): Promise<SvmOwnedNft[]> {
-  const d = await query<{ svm_collection_nft: { nft_mint: string; name: string | null }[] }>(
-    LIVE_SVM_NFTS_QUERY,
-    { owner, collectionKey }
-  );
+  const d = await query<{
+    svm_collection_nft: {
+      nft_mint: string;
+      name: string | null;
+      image: string | null;
+      uri: string | null;
+    }[];
+  }>(LIVE_SVM_NFTS_QUERY, { owner, collectionKey });
   return d.svm_collection_nft.map((row) => ({
     nftMint: row.nft_mint,
     name: row.name,
+    image: row.image,
+    uri: row.uri,
   }));
 }
 

@@ -8,6 +8,10 @@ interface SvmSonarFixtureRow {
   owner: string;
   nftMint: string;
   name: string | null;
+  /** PYTH-2: sonar's resolved image URL (Helius DAS content.links.image). */
+  image: string | null;
+  /** PYTH-2: sonar's metadata json_uri (Helius DAS content.json_uri). */
+  uri: string | null;
 }
 
 interface SvmSonarFixture {
@@ -33,11 +37,25 @@ function assertFixtureRow(row: unknown, filePath: string, index: number): SvmSon
       new Error(`nfts[${index}].name must be a string or null`)
     );
   }
+  if (r.image !== undefined && r.image !== null && typeof r.image !== "string") {
+    throw new FixtureLoadError(
+      filePath,
+      new Error(`nfts[${index}].image must be a string or null`)
+    );
+  }
+  if (r.uri !== undefined && r.uri !== null && typeof r.uri !== "string") {
+    throw new FixtureLoadError(
+      filePath,
+      new Error(`nfts[${index}].uri must be a string or null`)
+    );
+  }
   return {
     collectionKey: r.collectionKey as string,
     owner: r.owner as string,
     nftMint: r.nftMint as string,
     name: r.name === undefined || r.name === null ? null : (r.name as string),
+    image: r.image === undefined || r.image === null ? null : (r.image as string),
+    uri: r.uri === undefined || r.uri === null ? null : (r.uri as string),
   };
 }
 
@@ -65,5 +83,5 @@ const _fixture = loadFixture(FIXTURE_PATH);
 export function getSvmNftsByOwner(owner: string, collectionKey: string): SvmOwnedNft[] {
   return _fixture.nfts
     .filter((n) => n.collectionKey === collectionKey && n.owner === owner)
-    .map((n) => ({ nftMint: n.nftMint, name: n.name }));
+    .map((n) => ({ nftMint: n.nftMint, name: n.name, image: n.image, uri: n.uri }));
 }

@@ -14,6 +14,16 @@ export type MetadataStrategy =
   // equivalent here (a Metaplex mint's JSON lives on its metadata account, not
   // behind an EVM call) — see `unresolved` below.
   | { kind: "tokenuri" }
+  // Pass-through to sonar's OWN resolved image URL (PYTH-2). sonar's
+  // `svm_collection_nft` now publishes `image` (Helius DAS
+  // `content.links.image`) + `uri` (json_uri) directly — inventory-api does
+  // ZERO network fetch for this strategy: no RPC, no Metaplex
+  // metadata-account read, no IPFS call of its own. It returns whatever
+  // image URL sonar already resolved (or no image, if sonar has none for
+  // that mint yet). SVM-only today (Pythenians) — sonar is the one that
+  // reads Helius DAS; inventory only consumes what it publishes, per the
+  // belt model (closer-to-raw publishes, closer-to-meaning consumes).
+  | { kind: "sonar-image" }
   // NO WORKING METADATA SOURCE — declared, not pretended (INV-A).
   //
   // A row lands here when we cannot mirror the art (no rights) AND cannot point
@@ -79,6 +89,18 @@ export interface CollectionRegistryEntry {
    * has confirmed we hold the rights to re-host this collection's art.
    */
   rehost_policy?: RehostPolicy;
+  /**
+   * Hostname(s) this collection's resolved images are served from (PYTH-2) —
+   * the seam a dashboard image-optimizer allowlists (e.g. Next's
+   * `images.remotePatterns`). `undefined` when a row has not published one —
+   * and the `/collections` projection then OMITS the key entirely (never
+   * emits an explicit `null`; see `CollectionSummary.imageHost`). This is a
+   * STATIC per-row value — it does not fit a collection whose gateway host is
+   * environment-driven at runtime (e.g. Azuki's `IPFS_GATEWAY_HOST`); such
+   * rows are left unset here rather than baking in a value that can drift from
+   * the actual env var.
+   */
+  imageHost?: readonly string[];
 }
 
 /** External/community collection shape consumed by getNftsForOwner external path. */
@@ -254,47 +276,42 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     symbol: "PTN",
     totalSupply: 3682,
     aliases: ["pythians", "pythenians"],
-    // BROKEN — declared honestly rather than pretended (operator ruling +
-    // live probe, 2026-07-13).
+    // RESOLVED via sonar pass-through (PYTH-2, 2026-07-13).
     //
-    // This row declared `{ kind: "sovereign", slug: "pythians" }` since INV-3.
-    // That declaration was FICTION: the sovereign host serves nothing for it.
-    // Probed live, all 404 — /pythenians/pythians/1, /pythenians/1, /pythians/1.
-    // Pythenians art was never ingested, so every holder has been silently
-    // rendering a grey box (the 404 fail-softs to an imageless NFT).
+    // History: this row declared `{ kind: "sovereign", slug: "pythians" }`
+    // since INV-3 — fiction, the sovereign host 404s on every pythenians path
+    // (probed live). INV-A (same day) flipped it to `{ kind: "unresolved" }`:
+    // we do not hold the rights to mirror it (operator: "Mibera is our
+    // community and Purupuru as well, we own these. Pythenians and future
+    // ones, unless I ask to flag it, we don't own"), and at the time sonar's
+    // `svm_collection_nft` published no `uri`/`image` to proxy to either —
+    // only { collection_key, collection_mint, compressed, delegate, id, name,
+    // nft_mint, owner, slot, source, updated_at }.
     //
-    // We also do not hold the rights (operator: "Mibera is our community and
-    // Purupuru as well, we own these. Pythenians and future ones, unless I ask
-    // to flag it, we don't own"), so `rehost_policy: "proxy"` — mirroring it
-    // onto our CDN is not the fix.
+    // PYTH-1 closed that gap upstream: sonar now reads Helius DAS
+    // (`content.links.image` / `content.json_uri`) into `svm_collection_nft`
+    // as `image` / `uri` — option (a) from the INV-A comment ("sonar adds
+    // `uri`/`image` ... this row becomes a real SVM proxy arm"). inventory-api
+    // is a PURE pass-through of `image`: no RPC, no Metaplex read, no IPFS
+    // fetch of its own (see `getExternalNftsForOwner`'s `sonar-image` arm).
+    // `rehost_policy` stays "proxy" — we still do not own this art, we just
+    // point at sonar's already-resolved pointer instead of re-deriving it.
     //
-    // And we cannot point at it either, yet: `tokenuri` is EVM-only
-    // (`eth_call tokenURI(uint256)`), while Pythenians is SVM/Metaplex — its
-    // JSON lives on the mint's metadata account. Sonar does not publish it:
-    // `svm_collection_nft` carries only { collection_key, collection_mint,
-    // compressed, delegate, id, name, nft_mint, owner, slot, source,
-    // updated_at } — no `uri`, no `image` (introspected live 2026-07-13).
-    //
-    // UNBLOCK (whoever picks this up): either (a) sonar adds `uri` to
-    // svm_collection_nft — the cheapest fix, it already reads the metadata
-    // account to populate `name` — and this row becomes a real SVM proxy arm;
-    // or (b) inventory-api reads the Metaplex metadata account / DAS directly.
-    // (a) is the belt-model-correct one (sonar publishes, inventory consumes).
-    //
-    // Until then the tokens still resolve with real ids + real names (sonar
-    // DOES publish `name`, e.g. "Pythenians #2559") — just no image, said out
-    // loud in the log instead of via a silent 404 storm.
-    metadataStrategy: {
-      kind: "unresolved",
-      reason:
-        "SVM/Metaplex: never ingested to the sovereign host (404), we hold no rights to mirror it, " +
-        "and sonar's svm_collection_nft publishes no metadata `uri` to proxy to. Unblock: add `uri` to " +
-        "sonar's svm_collection_nft, then give this row a real SVM proxy arm.",
-    },
+    // CAVEAT (2026-07-13, PYTH-2): sonar's `image` column is empty in
+    // PRODUCTION until the operator re-runs the indexer post-PYTH-1-merge —
+    // this row is code-correct but will not show real images live until that
+    // reindex lands (see PYTH-2 handoff for the verification curl to run
+    // once it does).
+    metadataStrategy: { kind: "sonar-image" },
     external: true,
     enabled: true,
     svmCollectionMint: PYTHIANS_COLLECTION_MINT,
     rehost_policy: "proxy",
+    // The seam a dashboard image-optimizer allowlists (e.g. Next's
+    // images.remotePatterns) — sonar's `image` values are all
+    // ipfs.pythenians.xyz URLs (Pythenians' own IPFS gateway, per the DAS
+    // fixture this row was verified against).
+    imageHost: ["ipfs.pythenians.xyz"],
   },
   {
     id: PURUPURU_CONTRACT,
@@ -466,10 +483,28 @@ export interface CollectionSummary {
   chainId: number;
   name: string;
   symbol: string;
-  /** Metadata resolution posture (sovereign/tokenuri/unresolved/…). */
+  /** Metadata resolution posture (sovereign/tokenuri/sonar-image/unresolved/…). */
   metadataStrategy: MetadataStrategy["kind"];
   /** EFFECTIVE rights policy — always concrete ("proxy" when unset), never undefined. */
   rehost_policy: RehostPolicy;
+  /**
+   * Hostname(s) this collection's resolved images are served from (PYTH-2) —
+   * the seam a dashboard image-optimizer allowlists. OPTIONAL: a row without
+   * one OMITS the key entirely — it is NEVER serialized as an explicit
+   * `null`.
+   *
+   * This is a hard cross-repo wire contract, not a style choice. The
+   * dashboard's PYTH-3 schema decodes `/collections` with
+   * `Schema.optionalWith(Schema.Array(...), { default })`, which tolerates the
+   * key being ABSENT but REJECTS an explicit `null`. Because effect Schema
+   * decodes the whole array, a single `null` row throws the ENTIRE decode →
+   * `loadCollectionRegistry()` returns `[]` → every community's PFP path
+   * (slug→contract) blanks to identicons — not just the null row. So the
+   * omit-not-null shape here is what keeps the whole roster rendering. The
+   * `imageHost?` optionality (vs `| null`) makes that omission type-enforced,
+   * not merely a runtime convention.
+   */
+  imageHost?: readonly string[];
 }
 
 function entryToSummary(entry: CollectionRegistryEntry): CollectionSummary {
@@ -482,6 +517,13 @@ function entryToSummary(entry: CollectionRegistryEntry): CollectionSummary {
     symbol: entry.symbol,
     metadataStrategy: entry.metadataStrategy.kind,
     rehost_policy: effectiveRehostPolicy(entry),
+    // OMIT the key when the row has no imageHost — do NOT emit `null`. See the
+    // CollectionSummary.imageHost doc: an explicit `null` throws PYTH-3's whole
+    // /collections decode and blanks EVERY community's avatars, not just this
+    // row. Present-with-array or absent — never present-with-null.
+    ...(entry.imageHost && entry.imageHost.length > 0
+      ? { imageHost: entry.imageHost }
+      : {}),
   };
 }
 

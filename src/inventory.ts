@@ -280,6 +280,21 @@ async function resolveTokenUriPage(refs: TokenUriRef[], label: string): Promise<
 }
 
 /**
+ * A collection has NO working metadata source and we know it (registry declared
+ * `metadataStrategy: { kind: "unresolved" }`). Not a degradation — a standing,
+ * declared defect. Says the `reason` every time so the blocker is in the log,
+ * not just in a source comment nobody greps.
+ */
+function warnMetadataUnresolved(label: string, reason: string, tokenCount: number): void {
+  if (tokenCount === 0) return;
+  console.warn(
+    `[inventory-api] metadata unresolved for ${label}; ` +
+      `returning ${tokenCount} imageless NFT(s) (real ids + names, no art). ` +
+      `This is a DECLARED defect, not an outage — reason: ${reason}`
+  );
+}
+
+/**
  * Sort tokenIds ascending for "lowest token id held" selection
  * (getProfilePicture, INV-A) — but ONLY when EVERY id is a pure decimal
  * integer (true for every EVM tokenId in this registry, BigInt-safe against
@@ -385,9 +400,24 @@ async function getExternalNftsForOwner(
       })),
       col.metadataSlug ?? col.metadataWorld
     );
+  } else if (col.metadataStrategy.kind === "unresolved") {
+    // Declared-broken (Pythenians today). We know there is no metadata source
+    // we can actually read, so DON'T pretend: skip the network entirely and
+    // return the real tokenIds + real names (sonar publishes those) with no
+    // image. Warned once per page — the visible outcome for a holder is what
+    // it already was (no image), but it is now stated rather than arrived at
+    // silently via a 404 per token against a CDN that holds nothing.
+    warnMetadataUnresolved(col.sonarCollectionKey, col.metadataStrategy.reason, page.length);
+    nfts = page.map((tokenId) => ({
+      tokenId,
+      name: nameByTokenId.get(tokenId) ?? tokenId,
+      description: "",
+      imageUrl: "",
+      contentType: DEFAULT_CONTENT_TYPE,
+      attributes: [],
+    }));
   } else {
-    // Unreachable today: every external row is "sovereign" (Pythenians,
-    // Purupuru) or "tokenuri" (Azuki) — never "codex"/"sovereign-world".
+    // Unreachable today: no external row is "codex"/"sovereign-world".
     throw new Error(
       `external collection ${col.id} declares metadataStrategy "${col.metadataStrategy.kind}", ` +
         `unsupported by getExternalNftsForOwner`
@@ -461,12 +491,13 @@ export async function getNftsForOwner(
       `registry row ${entry.id} declares metadataStrategy "codex", unsupported by getNftsForOwner`
     );
   }
-  if (strategy.kind === "tokenuri") {
-    // Unreachable today: every registered tokenuri row (Azuki) is external,
-    // handled by getExternalNftsForOwner before this function is reached.
-    // Guard rather than silently fall through to the sovereign URL shape.
+  if (strategy.kind === "tokenuri" || strategy.kind === "unresolved") {
+    // Unreachable today: every registered "tokenuri" (Azuki) / "unresolved"
+    // (Pythenians) row is external, handled by getExternalNftsForOwner before
+    // this function is reached. Guard rather than silently fall through to the
+    // sovereign URL shape.
     throw new Error(
-      `registry row ${entry.id} declares metadataStrategy "tokenuri", unsupported by ` +
+      `registry row ${entry.id} declares metadataStrategy "${strategy.kind}", unsupported by ` +
         `getNftsForOwner's registered-collection path (external path only)`
     );
   }
@@ -543,6 +574,13 @@ export async function getNftMetadata(
     }
     if (strategy.kind === "tokenuri") {
       return fetchTokenUriMetadata(checksummedContract, entry.chainId, tokenId);
+    }
+    if (strategy.kind === "unresolved") {
+      // Declared-broken row. Not reachable for Pythenians (SVM — its mint is
+      // not a valid EVM contract, so validateEvmAddress rejects it above), but
+      // guard anyway: NEVER fall through to the codex fixture, which would
+      // answer with Mibera metadata for someone else's collection.
+      throw new NotFoundError(tokenId, contract);
     }
   }
 

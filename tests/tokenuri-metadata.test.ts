@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   fetchTokenUriMetadata,
   resolveIpfsUri,
+  ipfsGatewayHost,
+  ipfsGatewayBase,
+  assertIpfsGatewaySeam,
+  DEFAULT_IPFS_GATEWAY_HOST,
   __clearTokenUriCacheForTests,
 } from "../src/tokenuri-metadata.js";
 import { NotFoundError, ValidationError } from "../src/errors.js";
@@ -124,8 +128,61 @@ describe("tokenuri-metadata — third-party (proxy) resolver, INV-A", () => {
     expect(resolveIpfsUri("https://example.com/1.png")).toBe("https://example.com/1.png");
   });
 
-  it("resolveIpfsUri defaults to ipfs.io when IPFS_GATEWAY_URL is unset", () => {
+  it("resolveIpfsUri defaults to ipfs.io when IPFS_GATEWAY_HOST is unset", () => {
     uninstallAzukiEnv();
     expect(resolveIpfsUri("ipfs://someCID/1.png")).toBe("https://ipfs.io/ipfs/someCID/1.png");
+  });
+});
+
+/**
+ * The IPFS-gateway seam with the dashboard (DASH-A). ONE variable —
+ * `IPFS_GATEWAY_HOST`, a bare hostname — governs both sides: the dashboard
+ * feeds it to Next's `images.remotePatterns` (which takes a hostname), and
+ * this service DERIVES its URL prefix from it. Two variables for one fact is
+ * how the two sides silently diverge and every proxied image 400s.
+ */
+describe("IPFS gateway seam — one shared hostname (INV-A / DASH-A)", () => {
+  afterEach(() => {
+    delete process.env.IPFS_GATEWAY_HOST;
+  });
+
+  it("defaults to the same host the dashboard defaults to", () => {
+    delete process.env.IPFS_GATEWAY_HOST;
+    expect(ipfsGatewayHost()).toBe("ipfs.io");
+    expect(DEFAULT_IPFS_GATEWAY_HOST).toBe("ipfs.io");
+  });
+
+  it("DERIVES the URL prefix from the shared hostname — they cannot drift", () => {
+    process.env.IPFS_GATEWAY_HOST = "my-gateway.example";
+    expect(ipfsGatewayHost()).toBe("my-gateway.example");
+    expect(ipfsGatewayBase()).toBe("https://my-gateway.example/ipfs/");
+    // The emitted image URL is on exactly the host the dashboard was told to admit.
+    expect(resolveIpfsUri("ipfs://CID/1.png")).toBe("https://my-gateway.example/ipfs/CID/1.png");
+  });
+
+  it("FAILS CLOSED on a URL-shaped value — the dashboard cannot accept one", () => {
+    process.env.IPFS_GATEWAY_HOST = "https://ipfs.io/ipfs/";
+    expect(() => ipfsGatewayHost()).toThrow(/must be a bare hostname/);
+    // And the startup assertion surfaces it at BOOT, not per-request.
+    expect(() => assertIpfsGatewaySeam(() => {})).toThrow(/must be a bare hostname/);
+  });
+
+  it("startup assertion shouts when the host is non-default (dashboard must be rebuilt)", () => {
+    const lines: string[] = [];
+    process.env.IPFS_GATEWAY_HOST = "my-gateway.example";
+    assertIpfsGatewaySeam((m) => lines.push(m));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("WARNING");
+    expect(lines[0]).toContain("my-gateway.example");
+    expect(lines[0]).toContain("REBUILT");
+  });
+
+  it("startup assertion is quiet-but-explicit on the default host", () => {
+    delete process.env.IPFS_GATEWAY_HOST;
+    const lines: string[] = [];
+    assertIpfsGatewaySeam((m) => lines.push(m));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("ipfs.io");
+    expect(lines[0]).not.toContain("WARNING");
   });
 });

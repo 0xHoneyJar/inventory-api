@@ -10,7 +10,22 @@ export type MetadataStrategy =
   // Third-party / "proxy" resolution (INV-A) — points at the collection's OWN
   // tokenURI + metadata host (src/tokenuri-metadata.ts) instead of our CDN.
   // Used for collections whose license forbids us from re-hosting their art.
-  | { kind: "tokenuri" };
+  // EVM ONLY: it resolves `tokenURI(uint256)` via `eth_call`. There is no SVM
+  // equivalent here (a Metaplex mint's JSON lives on its metadata account, not
+  // behind an EVM call) — see `unresolved` below.
+  | { kind: "tokenuri" }
+  // NO WORKING METADATA SOURCE — declared, not pretended (INV-A).
+  //
+  // A row lands here when we cannot mirror the art (no rights) AND cannot point
+  // at it either (no resolver we can actually run). Resolution returns the
+  // tokens with their real ids and real names but NO image, and says so in the
+  // log — which is what the code ALREADY did for such a row, except silently
+  // and after burning a 404 round-trip per token against a CDN that holds
+  // nothing. An honest broken row beats a silently wrong one.
+  //
+  // `reason` is required: a row cannot enter this state without stating why,
+  // so the next person finds the actual blocker instead of re-deriving it.
+  | { kind: "unresolved"; reason: string };
 
 /**
  * Legal/rights gate on how a collection's art may be served (INV-A).
@@ -239,18 +254,47 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     symbol: "PTN",
     totalSupply: 3682,
     aliases: ["pythians", "pythenians"],
-    metadataStrategy: { kind: "sovereign", slug: "pythians" },
+    // BROKEN — declared honestly rather than pretended (operator ruling +
+    // live probe, 2026-07-13).
+    //
+    // This row declared `{ kind: "sovereign", slug: "pythians" }` since INV-3.
+    // That declaration was FICTION: the sovereign host serves nothing for it.
+    // Probed live, all 404 — /pythenians/pythians/1, /pythenians/1, /pythians/1.
+    // Pythenians art was never ingested, so every holder has been silently
+    // rendering a grey box (the 404 fail-softs to an imageless NFT).
+    //
+    // We also do not hold the rights (operator: "Mibera is our community and
+    // Purupuru as well, we own these. Pythenians and future ones, unless I ask
+    // to flag it, we don't own"), so `rehost_policy: "proxy"` — mirroring it
+    // onto our CDN is not the fix.
+    //
+    // And we cannot point at it either, yet: `tokenuri` is EVM-only
+    // (`eth_call tokenURI(uint256)`), while Pythenians is SVM/Metaplex — its
+    // JSON lives on the mint's metadata account. Sonar does not publish it:
+    // `svm_collection_nft` carries only { collection_key, collection_mint,
+    // compressed, delegate, id, name, nft_mint, owner, slot, source,
+    // updated_at } — no `uri`, no `image` (introspected live 2026-07-13).
+    //
+    // UNBLOCK (whoever picks this up): either (a) sonar adds `uri` to
+    // svm_collection_nft — the cheapest fix, it already reads the metadata
+    // account to populate `name` — and this row becomes a real SVM proxy arm;
+    // or (b) inventory-api reads the Metaplex metadata account / DAS directly.
+    // (a) is the belt-model-correct one (sonar publishes, inventory consumes).
+    //
+    // Until then the tokens still resolve with real ids + real names (sonar
+    // DOES publish `name`, e.g. "Pythenians #2559") — just no image, said out
+    // loud in the log instead of via a silent 404 storm.
+    metadataStrategy: {
+      kind: "unresolved",
+      reason:
+        "SVM/Metaplex: never ingested to the sovereign host (404), we hold no rights to mirror it, " +
+        "and sonar's svm_collection_nft publishes no metadata `uri` to proxy to. Unblock: add `uri` to " +
+        "sonar's svm_collection_nft, then give this row a real SVM proxy arm.",
+    },
     external: true,
     enabled: true,
     svmCollectionMint: PYTHIANS_COLLECTION_MINT,
-    // NOTE (flag for human review): this collection has been sovereign-hosted
-    // (mirrored onto our CDN) since INV-3, predating the rehost_policy field.
-    // "mirror" here describes what the code ALREADY DOES, not a fresh legal
-    // judgment — INV-A's own framing calls Pythenians a "we do not hold
-    // rights" proxy case, which is in tension with this. Resolving that
-    // tension (re-migrate to tokenuri/proxy, or confirm rights and keep
-    // mirror) is a human call, not one this change makes unilaterally.
-    rehost_policy: "mirror",
+    rehost_policy: "proxy",
   },
   {
     id: PURUPURU_CONTRACT,
@@ -267,6 +311,12 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: true,
     enabled: true,
     evmContracts: [PURUPURU_CONTRACT],
+    // Ours (operator: "Mibera is our community and Purupuru as well, we own
+    // these"), and the sovereign route genuinely serves it — verified live:
+    // /purupuru/genesis/1 -> 200. Note it is a PARTIAL mirror: we host the
+    // JSON, but its `image` points at ipfs.io, so the art itself was never
+    // mirrored. That is fine (we hold the rights either way) — just don't read
+    // "mirror" as "every byte is on our CDN".
     rehost_policy: "mirror",
   },
   {

@@ -52,14 +52,68 @@ function rpcUrlForChain(chainId: number): string {
   return fallback;
 }
 
-// ── IPFS gateway config (a config value, not a hardcoded string) ───────────
+// ── IPFS gateway config — ONE variable, shared with the dashboard ──────────
+//
+// `IPFS_GATEWAY_HOST` is a BARE HOSTNAME (e.g. "ipfs.io"), NOT a URL. That
+// shape is not ours to choose: the dashboard (DASH-A) feeds the same value to
+// Next's `images.remotePatterns`, which takes a hostname. We need a URL prefix
+// and it needs a hostname, so the HOSTNAME is the shared truth and this side
+// derives its prefix from it (`https://{host}/ipfs/`).
+//
+// Do NOT reintroduce a separate URL-shaped env var here. Two variables for one
+// fact is the seam that silently diverges: inventory-api would emit image URLs
+// on host A while the dashboard's image optimizer only admits host B, and every
+// proxied image 400s. One variable cannot drift from itself.
+//
+// SKEW HAZARD (real, not hypothetical): the dashboard reads this at BUILD time
+// (next.config.ts is evaluated during `next build`, so the host is baked into
+// the artifact); we read it at RUNTIME. A deploy that changes the runtime env
+// WITHOUT rebuilding the dashboard breaks the seam even though one variable
+// governs both. `assertIpfsGatewaySeam()` (called at startup, src/app.ts) logs
+// the effective host loudly so that skew is visible in the boot log rather than
+// as mysterious 400s on every image.
+export const DEFAULT_IPFS_GATEWAY_HOST = "ipfs.io";
 
-const DEFAULT_IPFS_GATEWAY = "https://ipfs.io/ipfs/";
+/** The shared gateway hostname (`IPFS_GATEWAY_HOST`), validated as a bare host. */
+export function ipfsGatewayHost(): string {
+  const raw = process.env.IPFS_GATEWAY_HOST?.trim();
+  if (!raw) return DEFAULT_IPFS_GATEWAY_HOST;
+  // Fail closed on a URL-shaped value. The dashboard CANNOT accept one (Next's
+  // remotePatterns wants a hostname), so a URL here means the two sides are
+  // already configured to disagree — better to refuse than to half-work.
+  if (raw.includes("/") || raw.includes(":")) {
+    throw new Error(
+      `IPFS_GATEWAY_HOST must be a bare hostname (e.g. "ipfs.io"), not a URL — got "${raw}". ` +
+        `The dashboard feeds this same value to Next's images.remotePatterns, which takes a hostname.`
+    );
+  }
+  return raw;
+}
 
-function ipfsGatewayBase(): string {
-  const override = process.env.IPFS_GATEWAY_URL;
-  const base = override && override.length > 0 ? override : DEFAULT_IPFS_GATEWAY;
-  return base.endsWith("/") ? base : `${base}/`;
+/** The gateway URL prefix this service needs, DERIVED from the shared hostname. */
+export function ipfsGatewayBase(): string {
+  return `https://${ipfsGatewayHost()}/ipfs/`;
+}
+
+/**
+ * Startup seam check. Cannot compare against the dashboard's BAKED value from
+ * here (that lives in its build artifact), so it does the honest thing: state
+ * the effective host at boot, and shout when it is non-default — because a
+ * non-default host is exactly the case where the dashboard must have been
+ * REBUILT with the same value, and nothing else will tell you if it wasn't.
+ */
+export function assertIpfsGatewaySeam(log: (msg: string) => void = console.log): void {
+  const host = ipfsGatewayHost(); // throws on a URL-shaped value
+  if (host === DEFAULT_IPFS_GATEWAY_HOST) {
+    log(`[inventory-api] IPFS gateway host: ${host} (default)`);
+    return;
+  }
+  log(
+    `[inventory-api] WARNING: IPFS_GATEWAY_HOST=${host} is NOT the default ` +
+      `(${DEFAULT_IPFS_GATEWAY_HOST}). The dashboard bakes this host into its build artifact ` +
+      `(next.config.ts -> images.remotePatterns). If it was not REBUILT with ` +
+      `IPFS_GATEWAY_HOST=${host}, every proxied NFT image will 400.`
+  );
 }
 
 /** Rewrite an `ipfs://CID/path` URI through the configured gateway; pass through anything else. */

@@ -143,6 +143,55 @@ describe("collection-registry v2", () => {
     expect(() => assertRehostPolicyInvariant([flagged])).not.toThrow();
   });
 
+  // ── Pythenians: proxy, and honestly declared broken (operator ruling + live probe) ──
+
+  it("Pythenians is rehost_policy: proxy — we do not own it, so it may NOT be mirrored", () => {
+    const entry = resolveCollectionRouteParam("pythians")!;
+    expect(effectiveRehostPolicy(entry)).toBe("proxy");
+    expect(entry.rehost_policy).toBe("proxy");
+  });
+
+  it("Pythenians declares NO working metadata source, with a reason (not a fictional sovereign route)", () => {
+    const entry = resolveCollectionRouteParam("pythians")!;
+    // It must NOT claim a mirror-hosted strategy it cannot satisfy: probed live
+    // 2026-07-13, the sovereign host 404s on every pythenians path.
+    expect(entry.metadataStrategy.kind).not.toBe("sovereign");
+    expect(entry.metadataStrategy.kind).not.toBe("sovereign-world");
+    expect(entry.metadataStrategy.kind).toBe("unresolved");
+    // A row cannot enter the broken state without saying WHY.
+    if (entry.metadataStrategy.kind === "unresolved") {
+      expect(entry.metadataStrategy.reason.length).toBeGreaterThan(0);
+      expect(entry.metadataStrategy.reason).toMatch(/sonar|SVM|Metaplex/i);
+    }
+    // Still routable + enabled — an honest broken row, not a removed one.
+    expect(entry.enabled).toBe(true);
+    expect(entry.external).toBe(true);
+  });
+
+  it("FAIL-SAFE: the invariant would REFUSE the old pythenians row (sovereign + proxy)", () => {
+    // This is the row as it was before INV-A: it declared a mirror-hosted
+    // sovereign strategy while (per the operator) we hold no rights to mirror
+    // it. The invariant now makes that combination impossible to ship.
+    const oldPythenians: CollectionRegistryEntry = {
+      id: PYTHIANS_COLLECTION_MINT,
+      chain: "svm",
+      chainId: 101,
+      collectionKey: "pythians",
+      worldSlug: "pythenians",
+      metadataSlug: "pythians",
+      name: "Pythenians",
+      symbol: "PTN",
+      totalSupply: 3682,
+      aliases: ["pythians"],
+      metadataStrategy: { kind: "sovereign", slug: "pythians" },
+      external: true,
+      enabled: true,
+      rehost_policy: "proxy", // the truthful policy...
+    };
+    // ...which is mechanically incompatible with the mirror-hosted strategy.
+    expect(() => assertRehostPolicyInvariant([oldPythenians])).toThrow(/explicit "mirror"/);
+  });
+
   it("FAIL-SAFE (symmetric): refuses rehost_policy: mirror on a row that does not actually mirror-host", () => {
     const lying: CollectionRegistryEntry = {
       id: "0x1234567890123456789012345678901234567890",

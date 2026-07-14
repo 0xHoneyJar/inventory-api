@@ -1,48 +1,57 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { getNftsForOwner } from "../src/inventory.js";
 import { ValidationError } from "../src/errors.js";
 import {
   PYTHIANS_COLLECTION_MINT,
   PURUPURU_CONTRACT,
 } from "../src/collection-registry.js";
-import { sovereignMetadataUrl } from "../src/sovereign-metadata.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PKG_ROOT = path.resolve(__dirname, "..");
 
 const PYTHIANS_HOLDER = "HdLiAKti95C7eNK78bfPEKbUrSP1roZgWxDnsbyWXour";
 const PYTHIANS_MINT = "PytheniansMint3180Example1111111111111111111";
 
-const pytheniansMetadataFixture = JSON.parse(
-  readFileSync(path.join(PKG_ROOT, "fixtures/pythenians-metadata.json"), "utf-8")
-);
+// NOTE (INV-A): `fixtures/pythenians-metadata.json` is no longer loaded here.
+// That fixture WAS the fiction — tests stubbed `fetch` to answer the sovereign
+// URL with it, then asserted the image from that same file. The real sovereign
+// host serves nothing for pythenians (404, probed live 2026-07-13). The fixture
+// is left on disk (harmless, and it documents what the art WOULD look like) but
+// nothing may assert against it as if it were served.
 
 describe("getNftsForOwner — external collections (issue #19)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("resolves pythenians by collection_key alias pythians", async () => {
+  // REWRITTEN (INV-A, 2026-07-13) — this test asserted a fiction.
+  //
+  // It stubbed `fetch` to answer the sovereign URL with
+  // `fixtures/pythenians-metadata.json`, then asserted the image FROM THAT SAME
+  // FIXTURE. A closed loop: it could only ever pass, and it proved nothing about
+  // the real seam. The real seam is empty — the sovereign host 404s on every
+  // pythenians path (probed live). Pythenians art was never ingested, so this
+  // green test sat on top of every holder rendering a grey box.
+  //
+  // The row is now declared `{ kind: "unresolved" }`: we hold no rights to
+  // mirror it, and there is nothing to proxy to (sonar's svm_collection_nft
+  // publishes no `uri`). Real ids + real names, no art, said out loud.
+  it("pythenians resolves to real ids + real NAMES with no art, and makes NO network call", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("fetch", async (url: string) => {
-      expect(url).toBe(
-        sovereignMetadataUrl("pythenians", "pythians", PYTHIANS_MINT)
-      );
-      return new Response(JSON.stringify(pytheniansMetadataFixture[PYTHIANS_MINT]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      throw new Error(`unresolved row must make no network call, attempted: ${String(url)}`);
     });
 
     const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
 
     expect(result.name).toBe("Pythenians");
+    expect(result.contractAddress).toBe(PYTHIANS_COLLECTION_MINT);
     expect(result.nfts).toHaveLength(1);
     expect(result.nfts[0].tokenId).toBe(PYTHIANS_MINT);
-    expect(result.nfts[0].imageUrl).toBe("https://ipfs.pythenians.xyz/nft/example3180.png");
-    expect(result.contractAddress).toBe(PYTHIANS_COLLECTION_MINT);
+    // The name IS real — sonar publishes it (svm_collection_nft.name).
+    expect(result.nfts[0].name).toBe("Pythenians #3180");
+    // The art is not, and we say so rather than inventing it.
+    expect(result.nfts[0].imageUrl).toBe("");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).toContain("metadata unresolved");
+    warn.mockRestore();
   });
 
   it("returns all pythenians for conviction-board holder in hermetic mode", async () => {
@@ -77,49 +86,24 @@ describe("getNftsForOwner — external collections (issue #19)", () => {
     expect(result.nfts).toEqual([]);
   });
 
-  it("fail-softs metadata to blank image when sovereign route 404s", async () => {
-    vi.stubGlobal("fetch", async () => new Response("", { status: 404 }));
-
+  it("an unresolved row still returns the DEFAULT contentType, not a guess from an empty string", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
     expect(result.nfts[0].imageUrl).toBe("");
-    expect(result.nfts[0].name).toBe("Pythenians #3180");
-    // No image resolved -> the default, not a guess from an empty string.
     expect(result.nfts[0].contentType).toBe("image/png");
+    warn.mockRestore();
   });
 
-  // The external path shares resolveSovereignPage with the Mibera path, so its
-  // contentType is now DERIVED from the image URL rather than hardcoded "image/png".
-  // Pythenians art is .png (unchanged), but purupuru's is .webp — previously the
-  // payload claimed image/png while serving a .webp, which this fixes.
-  it("derives contentType from the image extension on the external path", async () => {
-    vi.stubGlobal("fetch", async () =>
-      new Response(
-        JSON.stringify({
-          name: "Purupuru #1",
-          description: "",
-          image: "https://assets.0xhoneyjar.xyz/purupuru/1.webp",
-          attributes: [],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      )
-    );
-
-    const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
-    expect(result.nfts[0].imageUrl).toMatch(/\.webp$/);
-    expect(result.nfts[0].contentType).toBe("image/webp");
-  });
-
-  it("keeps contentType image/png for .png external art (pythenians)", async () => {
-    vi.stubGlobal("fetch", async (url: string) => {
-      expect(url).toBe(sovereignMetadataUrl("pythenians", "pythians", PYTHIANS_MINT));
-      return new Response(JSON.stringify(pytheniansMetadataFixture[PYTHIANS_MINT]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    });
-
-    const result = await getNftsForOwner(PYTHIANS_HOLDER, "pythians", { pageSize: 1 });
-    expect(result.nfts[0].imageUrl).toMatch(/\.png$/);
-    expect(result.nfts[0].contentType).toBe("image/png");
-  });
+  // MOVED (INV-A, 2026-07-13): two tests here proved the external path DERIVES
+  // contentType from the image extension (.webp -> image/webp) rather than
+  // hardcoding image/png. They used pythenians as their vehicle — but pythenians
+  // is now a declared-`unresolved` row that resolves NO image, so it can no
+  // longer carry that assertion (and purupuru, the only other sovereign external
+  // row, has no indexed holdings to resolve).
+  //
+  // That coverage did not disappear: it moved to the external row that DOES
+  // resolve real art — Azuki, on the tokenuri/proxy path — in
+  // tests/getNftsForOwner.azuki.test.ts ("derives contentType from the image
+  // extension", .png + .webp). The underlying helper is also unit-tested in
+  // tests/transform.test.ts (contentTypeForImageUrl).
 });

@@ -82,25 +82,32 @@ describe("HTTP route GET /profile/:address (via app.fetch)", () => {
     expect((body.imageUrl as string).length).toBeGreaterThan(0);
   });
 
-  it("pythenians: SVM holder + ?contract=pythians returns imageUrl when metadata resolves", async () => {
-    vi.stubGlobal("fetch", async () =>
-      new Response(
-        JSON.stringify({
-          name: "Pythenians #3180",
-          description: "",
-          image: "https://ipfs.pythenians.xyz/nft/example3180.png",
-          attributes: [],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      )
-    );
+  // REWRITTEN (INV-A, 2026-07-13). This test used to stub `fetch` with an
+  // invented `image: https://ipfs.pythenians.xyz/...` document and assert the
+  // route returned it. That document does not exist: the sovereign host serves
+  // NOTHING for pythenians (probed live — /pythenians/pythians/1,
+  // /pythenians/1, /pythians/1 all 404). The test was asserting a fiction its
+  // own stub had manufactured, so it passed while every real holder rendered a
+  // grey box. The registry now declares the row `unresolved` and the route
+  // honestly returns `imageUrl: null`.
+  it("pythenians: returns imageUrl null — the row has NO working metadata source (declared)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    // Any outbound fetch here is a bug: an `unresolved` row must not touch the
+    // network to discover what the registry already knows.
+    vi.stubGlobal("fetch", async (url: string) => {
+      throw new Error(`unresolved row must make no network call, attempted: ${String(url)}`);
+    });
 
     const res = await get(`/profile/${PYTHIANS_HOLDER}?contract=pythians`);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.address).toBe(PYTHIANS_HOLDER);
     expect(body.contract).toBe("pythians");
-    expect(body.imageUrl).toBe("https://ipfs.pythenians.xyz/nft/example3180.png");
+    expect(body.imageUrl).toBeNull();
+    // ...and it is NOT silent about it.
+    expect(warn).toHaveBeenCalled();
+    expect(String(warn.mock.calls[0][0])).toContain("metadata unresolved");
+    warn.mockRestore();
   });
 });
 

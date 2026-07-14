@@ -20,7 +20,10 @@ export const AZUKI_HOLDER = "0x3418fedc175eb74445e6eb0ade1435fd96bfca2a";
 // Test-scoped RPC/gateway values (set via env, NEVER the src defaults) — this
 // is what proves both are genuinely config values, not hardcoded strings.
 export const AZUKI_TEST_RPC_URL = "https://rpc.test/eth-mainnet";
-export const AZUKI_TEST_IPFS_GATEWAY = "https://ipfs.test/ipfs/";
+/** Bare HOSTNAME — the shape the dashboard (DASH-A) shares via IPFS_GATEWAY_HOST. */
+export const AZUKI_TEST_IPFS_HOST = "ipfs.test";
+/** The URL prefix inventory-api DERIVES from that hostname. */
+export const AZUKI_TEST_IPFS_GATEWAY = `https://${AZUKI_TEST_IPFS_HOST}/ipfs/`;
 export const AZUKI_TEST_SONAR_ENDPOINT = "https://belt-gateway.test/v1/graphql";
 
 const BASE_URI_CID = "QmZcH4YvBVVRJtdn4RdbaqgspFU8gH6P9vomDpBVpAL3u4";
@@ -41,15 +44,15 @@ export const AZUKI_4442_METADATA = {
   ],
 };
 
-/** Set the env overrides the tokenuri resolver reads (RPC endpoint + IPFS gateway). */
+/** Set the env overrides the tokenuri resolver reads (RPC endpoint + IPFS gateway HOST). */
 export function installAzukiEnv(): void {
   process.env.RPC_URL_1 = AZUKI_TEST_RPC_URL;
-  process.env.IPFS_GATEWAY_URL = AZUKI_TEST_IPFS_GATEWAY;
+  process.env.IPFS_GATEWAY_HOST = AZUKI_TEST_IPFS_HOST;
 }
 
 export function uninstallAzukiEnv(): void {
   delete process.env.RPC_URL_1;
-  delete process.env.IPFS_GATEWAY_URL;
+  delete process.env.IPFS_GATEWAY_HOST;
 }
 
 // ── Minimal ABI encode/decode — the INVERSE of src/tokenuri-metadata.ts's

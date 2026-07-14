@@ -8,6 +8,7 @@ import {
   installAzukiEnv,
   uninstallAzukiEnv,
   stubAzukiFetch,
+  azukiRpcResponse,
 } from "./support/azuki-fixture-stub.js";
 
 /**
@@ -67,6 +68,45 @@ describe("getNftsForOwner — Azuki (INV-A third-party proxy path)", () => {
     const result = await getNftsForOwner(AZUKI_HOLDER, "azuki");
     expect(result.contractAddress).toBe(AZUKI_CONTRACT);
     expect(result.nfts[0].tokenId).toBe("4442");
+  });
+
+  // RELOCATED from tests/getNftsForOwner.external.test.ts (INV-A). Those two
+  // tests proved the EXTERNAL path derives contentType from the image extension
+  // rather than hardcoding image/png. They rode on pythenians, which no longer
+  // resolves any image (declared `unresolved`), so the assertion moved to the
+  // external row that DOES resolve real art: Azuki, on the proxy path.
+  it("derives contentType from the image extension (.png and .webp), not a hardcoded image/png", async () => {
+    // Serve a .webp for token 1 and the real .png for 4442 through the gateway.
+    vi.stubGlobal("fetch", async (url: string, init?: { body?: string }) => {
+      if (url === AZUKI_TEST_SONAR_ENDPOINT) {
+        const { query: gql } = JSON.parse(init?.body ?? "{}") as { query: string };
+        const data: Record<string, unknown> = {};
+        if (gql.includes("Token(")) data.Token = [{ tokenId: "1" }, { tokenId: "4442" }];
+        return new Response(JSON.stringify({ data }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      const rpc = azukiRpcResponse(url, init);
+      if (rpc) return rpc;
+      const tokenId = url.slice(url.lastIndexOf("/") + 1);
+      const image =
+        tokenId === "1" ? "ipfs://someCID/1.webp" : "ipfs://someCID/4442.png";
+      return new Response(
+        JSON.stringify({ name: `Azuki #${tokenId}`, image, attributes: [] }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    });
+
+    const result = await getNftsForOwner(AZUKI_HOLDER, AZUKI_CONTRACT);
+
+    const webp = result.nfts.find((n) => n.tokenId === "1")!;
+    expect(webp.imageUrl).toMatch(/\.webp$/);
+    expect(webp.contentType).toBe("image/webp");
+
+    const png = result.nfts.find((n) => n.tokenId === "4442")!;
+    expect(png.imageUrl).toMatch(/\.png$/);
+    expect(png.contentType).toBe("image/png");
   });
 
   it("fail-softs to an imageless NFT (and warns) when the metadata gateway is unreachable", async () => {

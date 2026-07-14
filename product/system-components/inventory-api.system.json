@@ -1,0 +1,68 @@
+{
+  "$schema": "https://raw.githubusercontent.com/0xHoneyJar/loa-freeside/177a57a4fdb18c071b4f82f7560ca705b5807a1c/spec/product/system-component.schema.json",
+  "schema_version": "1.0",
+  "component_id": "inventory-api",
+  "repository": "github:0xHoneyJar/inventory-api",
+  "layer": "building",
+  "operator": {
+    "role": "Freeside systems component engineer",
+    "job": "Consume verifiable holdings and metadata over HTTP or MCP without rebuilding the sonar-to-metadata join."
+  },
+  "object": {
+    "kind": "system-component",
+    "description": "The sovereign read-side inventory building for holdings, owned NFTs, metadata, and ACVP completeness envelopes."
+  },
+  "question": "What does this wallet hold, and how complete and fresh is that inventory claim?",
+  "responsibility": "Join indexed holdings with owned metadata and return consumer-ready inventory records with completeness provenance.",
+  "consumers": [
+    {
+      "name": "loa-freeside",
+      "need": "Holdings evidence with explicit completeness for composed member reads."
+    },
+    {
+      "name": "freeside-dashboard",
+      "need": "Inventory and collection context without direct chain or metadata-vendor calls."
+    },
+    {
+      "name": "agent consumers",
+      "need": "The same holdings capability through a typed MCP surface."
+    }
+  ],
+  "trust": {
+    "contract_status": "declared",
+    "contract_refs": [
+      "file:openapi.json",
+      "file:mcp.json"
+    ],
+    "evidence_refs": [
+      "file:README.md"
+    ],
+    "note": "OpenAPI and MCP artifacts are emitted from the same route declarations; completeness still depends on upstream sonar freshness and registered metadata."
+  },
+  "actions": [
+    "inspect",
+    "query-holdings",
+    "query-metadata",
+    "verify-completeness"
+  ],
+  "boundaries": {
+    "owns": [
+      "Consumer-ready holdings and NFT metadata reads.",
+      "The ACVP completeness envelope for inventory results."
+    ],
+    "does_not_own": [
+      "Raw chain indexing or RPC truth.",
+      "Minting, burning, or transfers.",
+      "Metadata storage ownership or dashboard presentation."
+    ],
+    "missing_capability_handoff": "Add the missing inventory route or schema at this building; do not query chain providers directly from the BFF or UI."
+  },
+  "flow_moments": [
+    {
+      "flow_moment_id": "FM-AUDIT-COMPOSITION",
+      "canonical_ref": "flow:FM-AUDIT-COMPOSITION",
+      "role": "producer",
+      "contribution": "Produce holdings, collection, and metadata facts with completeness envelopes for person and cohort receipts."
+    }
+  ]
+}

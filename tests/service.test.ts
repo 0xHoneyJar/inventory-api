@@ -71,6 +71,11 @@ describe("HTTP routes (via app.fetch)", () => {
       expect(typeof c.name).toBe("string");
       // rehost_policy is ALWAYS concrete — never undefined.
       expect(["mirror", "proxy", "excluded"]).toContain(c.rehost_policy);
+      // imageHost (PYTH-2) is OMITTED when absent (undefined after JSON
+      // round-trip) or an array — but MUST NEVER be an explicit `null`, which
+      // would throw PYTH-3's whole /collections decode. See the wire test below.
+      expect(c.imageHost === undefined || Array.isArray(c.imageHost)).toBe(true);
+      expect(c.imageHost).not.toBeNull();
     }
 
     const byKey = (k: string) =>
@@ -78,12 +83,34 @@ describe("HTTP routes (via app.fetch)", () => {
         (c: { id: string; aliases: string[] }) => c.id === k || c.aliases.includes(k),
       );
     // Mibera is ours -> mirror; Azuki is third-party -> proxy; Pythenians is
-    // the declared-broken proxy row.
+    // proxy too, resolved via sonar's own pass-through (PYTH-2).
     expect(byKey("mibera").rehost_policy).toBe("mirror");
     expect(byKey("azuki").rehost_policy).toBe("proxy");
     expect(byKey("azuki").metadataStrategy).toBe("tokenuri");
     expect(byKey("pythians").rehost_policy).toBe("proxy");
-    expect(byKey("pythians").metadataStrategy).toBe("unresolved");
+    expect(byKey("pythians").metadataStrategy).toBe("sonar-image");
+    // PYTH-2: the dashboard image-optimizer allowlist seam — a real host.
+    expect(byKey("pythians").imageHost).toEqual(["ipfs.pythenians.xyz"]);
+    // A host-less row OMITS the key entirely (absent after JSON round-trip),
+    // NOT `imageHost: null`. PYTH-3's effect Schema tolerates absent but
+    // throws on explicit null — one null row would blank the whole registry.
+    expect("imageHost" in byKey("mibera")).toBe(false);
+    expect(byKey("mibera").imageHost).toBeUndefined();
+  });
+
+  it("GET /collections wire carries NO explicit `imageHost: null` — the PYTH-3 decode contract", async () => {
+    const res = await get("/collections");
+    expect(res.status).toBe(200);
+    // Assert against the RAW wire bytes the dashboard actually decodes, not a
+    // re-serialization: an explicit null anywhere throws effect Schema's whole
+    // array decode -> loadCollectionRegistry() returns [] -> every community's
+    // PFP path regresses to identicons. This is the specific hole that a
+    // `imageHost ?? null` projection would reopen.
+    const raw = await res.text();
+    expect(raw).not.toContain('"imageHost":null');
+    expect(raw).not.toContain('"imageHost": null');
+    // ...and the one real host DID make it onto the wire (not omitted too).
+    expect(raw).toContain('"imageHost":["ipfs.pythenians.xyz"]');
   });
 
   it("GET /holdings/:address forwards the contracts query option", async () => {

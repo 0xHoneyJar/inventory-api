@@ -151,21 +151,51 @@ describe("collection-registry v2", () => {
     expect(entry.rehost_policy).toBe("proxy");
   });
 
-  it("Pythenians declares NO working metadata source, with a reason (not a fictional sovereign route)", () => {
+  // ── Pythenians: PYTH-2 sonar-image pass-through ──────────────────────────
+  //
+  // History: this row declared `{ kind: "unresolved" }` from INV-A
+  // (2026-07-13) because sonar's svm_collection_nft published no
+  // `uri`/`image` at the time to proxy to. PYTH-1 taught sonar to publish
+  // the RESOLVED image URL directly (Helius DAS content.links.image) — this
+  // row is now a real (pure pass-through, zero-fetch) SVM proxy arm.
+
+  it("Pythenians resolves via sonar's own resolved image (PYTH-2) — not a fictional sovereign route", () => {
     const entry = resolveCollectionRouteParam("pythians")!;
     // It must NOT claim a mirror-hosted strategy it cannot satisfy: probed live
     // 2026-07-13, the sovereign host 404s on every pythenians path.
     expect(entry.metadataStrategy.kind).not.toBe("sovereign");
     expect(entry.metadataStrategy.kind).not.toBe("sovereign-world");
-    expect(entry.metadataStrategy.kind).toBe("unresolved");
-    // A row cannot enter the broken state without saying WHY.
-    if (entry.metadataStrategy.kind === "unresolved") {
-      expect(entry.metadataStrategy.reason.length).toBeGreaterThan(0);
-      expect(entry.metadataStrategy.reason).toMatch(/sonar|SVM|Metaplex/i);
-    }
-    // Still routable + enabled — an honest broken row, not a removed one.
+    expect(entry.metadataStrategy.kind).toBe("sonar-image");
+    // Still routable + enabled.
     expect(entry.enabled).toBe(true);
     expect(entry.external).toBe(true);
+  });
+
+  it("Pythenians publishes its resolved-image host for the dashboard's image optimizer (PYTH-2)", () => {
+    const entry = resolveCollectionRouteParam("pythians")!;
+    expect(entry.imageHost).toEqual(["ipfs.pythenians.xyz"]);
+  });
+
+  it("FAIL-SAFE: sonar-image + proxy is a legal combination — assertRehostPolicyInvariant does not throw", () => {
+    const row: CollectionRegistryEntry = {
+      id: PYTHIANS_COLLECTION_MINT,
+      chain: "svm",
+      chainId: 101,
+      collectionKey: "pythians",
+      worldSlug: "pythenians",
+      metadataSlug: "pythians",
+      name: "Pythenians",
+      symbol: "PTN",
+      totalSupply: 3682,
+      aliases: ["pythians"],
+      metadataStrategy: { kind: "sonar-image" },
+      external: true,
+      enabled: true,
+      rehost_policy: "proxy",
+    };
+    // sonar-image is not mirror-hosted, so the invariant's `mirrorHosted`
+    // check does not apply — proxy stays legal.
+    expect(() => assertRehostPolicyInvariant([row])).not.toThrow();
   });
 
   it("FAIL-SAFE: the invariant would REFUSE the old pythenians row (sovereign + proxy)", () => {

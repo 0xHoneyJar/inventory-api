@@ -12,14 +12,30 @@
 // src/live-sonar.ts). If the route ever moves, keep this module in sync with the
 // storage-api URL contract.
 //
-// Scope: the sovereign metadata source is this storage-api route ONLY — no chain
-// RPC, no tokenURI, no sonar GraphQL, no honeyroad. The live JSON shape is already
-// `{ name, description, image, attributes: [{ trait_type, value }] }` (verified live).
+// Scope (amended, INV-A 2026-07-13): this module — the sovereign/mirror route,
+// storage-api ONLY, no chain RPC, no tokenURI, no sonar GraphQL, no honeyroad —
+// is scoped to collections we actually hold the rights to (Mibera-family,
+// Purupuru). That used to be stated as an absolute rule ("the sovereign metadata
+// source is THIS route ONLY") because every registered collection was ours. It
+// no longer is: most third-party collections' LICENSES FORBID us from copying
+// their art onto our CDN, so a collection we do not hold rights to must instead
+// be POINTED AT (its own tokenURI + its own metadata host — see
+// src/tokenuri-metadata.ts, `metadataStrategy: "tokenuri"`), never mirrored here.
+// The rights gate is `rehost_policy` in src/collection-registry.ts
+// (`assertRehostPolicyInvariant` enforces it at load time) — do NOT "fix" a
+// collection back onto this sovereign path without an explicit human
+// `rehost_policy: "mirror"` confirming we hold the rights; that is precisely
+// the mistake this comment used to invite. The live JSON shape this route
+// serves is `{ name, description, image, attributes: [{ trait_type, value }] }`
+// (verified live).
 //
-// One slug per sovereign collection (e.g. "mst", "candies", "fractures"). Adding a
-// collection is a registry row in src/inventory.ts (slug + contract) — NOT a new
-// function here. (A collection may register MORE THAN ONE contract under one slug,
-// e.g. "fractures" routes its ten contracts to a single slug.)
+// One slug per sovereign (mirror-hosted) collection (e.g. "mst", "candies",
+// "fractures"). Adding one is a registry row in src/collection-registry.ts
+// (slug + contract + explicit `rehost_policy: "mirror"`) — NOT a new function
+// here. (Registry rows live in src/collection-registry.ts, not src/inventory.ts —
+// this comment predated that extraction.) A collection may register MORE THAN
+// ONE contract under one slug, e.g. "fractures" routes its ten contracts to a
+// single slug.
 
 import { NotFoundError, ValidationError } from "./errors.js";
 import type { Attribute, MetadataDocument } from "../types.js";

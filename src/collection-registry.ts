@@ -6,7 +6,28 @@ export type CollectionVm = ChainType;
 export type MetadataStrategy =
   | { kind: "codex" }
   | { kind: "sovereign"; slug: string }
-  | { kind: "sovereign-world" };
+  | { kind: "sovereign-world" }
+  // Third-party / "proxy" resolution (INV-A) — points at the collection's OWN
+  // tokenURI + metadata host (src/tokenuri-metadata.ts) instead of our CDN.
+  // Used for collections whose license forbids us from re-hosting their art.
+  | { kind: "tokenuri" };
+
+/**
+ * Legal/rights gate on how a collection's art may be served (INV-A).
+ *
+ * - `"mirror"` — we hold the rights and copy the art onto OUR storage-api CDN
+ *   (`metadataStrategy: "sovereign" | "sovereign-world"`). Must be set
+ *   EXPLICITLY, by a human, per collection — never inferred.
+ * - `"proxy"` — we do NOT hold the rights; we point at the collection's own
+ *   metadata source instead (`metadataStrategy: "tokenuri"`). This is the
+ *   DEFAULT (see `effectiveRehostPolicy`) — every future onboard is proxy
+ *   unless a human explicitly flips it, which is the point: a collection must
+ *   be MECHANICALLY INCAPABLE of entering the mirror (re-hosted) path without
+ *   that explicit flag. See `assertRehostPolicyInvariant` below, which is the
+ *   enforcement site (runs at module load against the real registry).
+ * - `"excluded"` — no metadata resolution offered (reserved; unused today).
+ */
+export type RehostPolicy = "mirror" | "proxy" | "excluded";
 
 /**
  * Collection registry v2 row — one logical collection in inventory-api.
@@ -20,9 +41,9 @@ export interface CollectionRegistryEntry {
   chainId: number;
   /** Belt-gateway TrackedHolder / svm_collection_nft collection_key. */
   collectionKey: string;
-  /** Sovereign metadata host world segment (`metadata.0xhoneyjar.xyz/{worldSlug}/…`). */
+  /** Sovereign metadata host world segment (`metadata.0xhoneyjar.xyz/{worldSlug}/…`). Unused by `metadataStrategy: "tokenuri"` rows. */
   worldSlug: string;
-  /** Sovereign metadata slug; `null` = world namesake route (`/{world}/{tokenId}`). */
+  /** Sovereign metadata slug; `null` = world namesake route (`/{world}/{tokenId}`). Unused by `metadataStrategy: "tokenuri"` rows. */
   metadataSlug: string | null;
   name: string;
   symbol: string;
@@ -37,6 +58,12 @@ export interface CollectionRegistryEntry {
   evmContracts?: readonly string[];
   /** SVM Metaplex collection mint when chain === "svm". */
   svmCollectionMint?: string;
+  /**
+   * Rehost/rights policy (INV-A). Omit to get the default (`"proxy"`) — see
+   * `effectiveRehostPolicy`. Set explicitly to `"mirror"` ONLY when a human
+   * has confirmed we hold the rights to re-host this collection's art.
+   */
+  rehost_policy?: RehostPolicy;
 }
 
 /** External/community collection shape consumed by getNftsForOwner external path. */
@@ -51,6 +78,7 @@ export interface ExternalCollection {
   sonarCollectionKey: string;
   metadataWorld: string;
   metadataSlug: string;
+  metadataStrategy: MetadataStrategy;
   evmContract?: string;
   svmCollectionMint?: string;
 }
@@ -88,6 +116,15 @@ export const PYTHIANS_COLLECTION_MINT =
 /** Purupuru — EVM on Base (8453). */
 export const PURUPURU_CONTRACT = "0x6CfB9280767a3596Ee6af887D900014a755ffc75";
 
+/** Azuki — third-party (proxy). EVM on Ethereum mainnet (1). INV-A. */
+export const AZUKI_CONTRACT = "0xED5AF388653567Af2F388E6224dC7C4b3241C544";
+export const AZUKI_CHAIN_ID = 1;
+// Verified against sonar's src/handlers/tracked-erc721/constants.ts on
+// origin/main (2026-07-13) — the local sonar-api checkout was stale and
+// showed an older doc revision; grounded against origin/main, not the
+// working tree, per this cycle's stale-checkout lesson.
+export const AZUKI_COLLECTION_KEY = "azuki";
+
 const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
   {
     id: MIBERA_CONTRACT,
@@ -104,6 +141,7 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: false,
     enabled: true,
     evmContracts: [MIBERA_CONTRACT],
+    rehost_policy: "mirror",
   },
   {
     id: MST_CONTRACT,
@@ -120,6 +158,7 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: false,
     enabled: true,
     evmContracts: [MST_CONTRACT],
+    rehost_policy: "mirror",
   },
   {
     id: CANDIES_CONTRACT,
@@ -136,6 +175,7 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: false,
     enabled: true,
     evmContracts: [CANDIES_CONTRACT],
+    rehost_policy: "mirror",
   },
   {
     id: TAROT_CONTRACT,
@@ -152,6 +192,7 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: false,
     enabled: true,
     evmContracts: [TAROT_CONTRACT],
+    rehost_policy: "mirror",
   },
   {
     id: GIF_CONTRACT,
@@ -168,6 +209,7 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: false,
     enabled: true,
     evmContracts: [GIF_CONTRACT],
+    rehost_policy: "mirror",
   },
   {
     id: FRACTURED_ADDRESSES[0],
@@ -184,6 +226,7 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: false,
     enabled: true,
     evmContracts: [...FRACTURED_ADDRESSES],
+    rehost_policy: "mirror",
   },
   {
     id: PYTHIANS_COLLECTION_MINT,
@@ -200,6 +243,14 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: true,
     enabled: true,
     svmCollectionMint: PYTHIANS_COLLECTION_MINT,
+    // NOTE (flag for human review): this collection has been sovereign-hosted
+    // (mirrored onto our CDN) since INV-3, predating the rehost_policy field.
+    // "mirror" here describes what the code ALREADY DOES, not a fresh legal
+    // judgment — INV-A's own framing calls Pythenians a "we do not hold
+    // rights" proxy case, which is in tension with this. Resolving that
+    // tension (re-migrate to tokenuri/proxy, or confirm rights and keep
+    // mirror) is a human call, not one this change makes unilaterally.
+    rehost_policy: "mirror",
   },
   {
     id: PURUPURU_CONTRACT,
@@ -216,8 +267,37 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     external: true,
     enabled: true,
     evmContracts: [PURUPURU_CONTRACT],
+    rehost_policy: "mirror",
+  },
+  {
+    id: AZUKI_CONTRACT,
+    chain: "evm",
+    chainId: AZUKI_CHAIN_ID,
+    collectionKey: AZUKI_COLLECTION_KEY,
+    // worldSlug/metadataSlug are unused by the "tokenuri" strategy (no
+    // sovereign-CDN route exists for this row) — kept populated for shape
+    // parity with other ExternalCollection rows, never dereferenced.
+    worldSlug: "azuki",
+    metadataSlug: null,
+    name: "Azuki",
+    symbol: "AZUKI",
+    totalSupply: 10_000,
+    aliases: ["azuki"],
+    metadataStrategy: { kind: "tokenuri" },
+    external: true,
+    enabled: true,
+    evmContracts: [AZUKI_CONTRACT],
+    // rehost_policy intentionally omitted — proves the "proxy" DEFAULT
+    // (effectiveRehostPolicy) rather than setting it explicitly. We do not
+    // hold rights to Azuki's art; see src/tokenuri-metadata.ts.
   },
 ];
+
+// Fail-safe: a collection must be MECHANICALLY INCAPABLE of entering the
+// mirror (our-CDN, re-hosted) path without an explicit `rehost_policy:
+// "mirror"` flag. Runs at import time against the real registry — a bad row
+// breaks the module load rather than silently shipping a legal exposure.
+assertRehostPolicyInvariant(COLLECTION_REGISTRY);
 
 function entryToExternal(entry: CollectionRegistryEntry): ExternalCollection {
   return {
@@ -231,9 +311,53 @@ function entryToExternal(entry: CollectionRegistryEntry): ExternalCollection {
     sonarCollectionKey: entry.collectionKey,
     metadataWorld: entry.worldSlug,
     metadataSlug: entry.metadataSlug ?? entry.collectionKey,
+    metadataStrategy: entry.metadataStrategy,
     evmContract: entry.evmContracts?.[0],
     svmCollectionMint: entry.svmCollectionMint,
   };
+}
+
+/** The rehost policy that actually governs a row — `"proxy"` when unset. */
+export function effectiveRehostPolicy(entry: CollectionRegistryEntry): RehostPolicy {
+  return entry.rehost_policy ?? "proxy";
+}
+
+/**
+ * Fail-safe enforcement (INV-A): a row whose `metadataStrategy` mirror-hosts
+ * art on OUR CDN (`"sovereign"` / `"sovereign-world"`) MUST carry an explicit
+ * `rehost_policy: "mirror"` — the default (`"proxy"`) is refused. Symmetric
+ * check the other way too: `"mirror"` must describe a strategy that actually
+ * mirrors, so the field can't be set to paper over a proxy/pointer row.
+ *
+ * Exported (not just called at module load) so tests can prove the refusal
+ * directly against a hand-built row, without needing to corrupt the real
+ * private registry array to do it.
+ */
+export function assertRehostPolicyInvariant(
+  entries: readonly CollectionRegistryEntry[]
+): void {
+  for (const entry of entries) {
+    const mirrorHosted =
+      entry.metadataStrategy.kind === "sovereign" ||
+      entry.metadataStrategy.kind === "sovereign-world";
+    const policy = effectiveRehostPolicy(entry);
+
+    if (mirrorHosted && policy !== "mirror") {
+      throw new Error(
+        `collection registry row "${entry.id}" (${entry.collectionKey}) uses a mirror-hosted ` +
+          `metadataStrategy ("${entry.metadataStrategy.kind}") but rehost_policy is "${policy}", ` +
+          `not explicit "mirror". A collection must be mechanically incapable of entering the ` +
+          `mirror (re-hosted, our-CDN) path without an explicit human-set rehost_policy: "mirror".`
+      );
+    }
+    if (!mirrorHosted && policy === "mirror") {
+      throw new Error(
+        `collection registry row "${entry.id}" (${entry.collectionKey}) sets rehost_policy: ` +
+          `"mirror" but its metadataStrategy ("${entry.metadataStrategy.kind}") does not mirror-host ` +
+          `anything — "mirror" must describe what the code actually does.`
+      );
+    }
+  }
 }
 
 function buildRouteIndex(): Map<string, CollectionRegistryEntry> {

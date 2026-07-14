@@ -167,6 +167,31 @@ describe("IPFS gateway seam — one shared hostname (INV-A / DASH-A)", () => {
     expect(() => assertIpfsGatewaySeam(() => {})).toThrow(/must be a bare hostname/);
   });
 
+  it("rejects EVERYTHING that is not a bare FQDN, so it cannot diverge from the dashboard's check", () => {
+    const bad = [
+      "https://ipfs.io/ipfs/", // scheme + path
+      "ipfs.io/ipfs", // path
+      "ipfs.io:8080", // port
+      "ipfs io", // whitespace
+      "ipfs..io", // empty label
+      "-ipfs.io", // leading hyphen
+      "ipfs.io-", // trailing hyphen
+      "ipfs", // single label, no dot (not an FQDN)
+      "http://ipfs.io", // scheme only
+    ];
+    for (const value of bad) {
+      process.env.IPFS_GATEWAY_HOST = value;
+      expect(() => ipfsGatewayHost(), `should reject "${value}"`).toThrow(/bare hostname/);
+    }
+  });
+
+  it("accepts well-formed bare FQDNs (the values both sides agree on)", () => {
+    for (const value of ["ipfs.io", "dweb.link", "my-gateway.example", "a.b.c.example.com"]) {
+      process.env.IPFS_GATEWAY_HOST = value;
+      expect(ipfsGatewayHost()).toBe(value);
+    }
+  });
+
   it("startup assertion shouts when the host is non-default (dashboard must be rebuilt)", () => {
     const lines: string[] = [];
     process.env.IPFS_GATEWAY_HOST = "my-gateway.example";

@@ -573,7 +573,23 @@ export async function getNftMetadata(
       );
     }
     if (strategy.kind === "tokenuri") {
-      return fetchTokenUriMetadata(checksummedContract, entry.chainId, tokenId);
+      // Contain the error at this seam — the single-token path had no catch,
+      // unlike the bulk owner-list path (resolveTokenUriPage). A NotFoundError
+      // is the intentional 404; ANY other throw (RPC/network/parse) is
+      // sanitized to a generic, detail-free error so nothing upstream — a
+      // provider URL, an embedded API key — can ride a raw `.message` out
+      // through toHyperError. fetchTokenUriMetadata already throws URL-free
+      // after the RPC-leak fix; this is the same belt-and-suspenders the bulk
+      // path has. (Deliberately NOT a blank-200 fail-soft: a single-token
+      // lookup returning empty metadata would misreport a transient RPC blip as
+      // "this token has no metadata"; the bulk path only fail-softs to protect
+      // the OTHER tokens in a page, which does not apply to one token.)
+      try {
+        return await fetchTokenUriMetadata(checksummedContract, entry.chainId, tokenId);
+      } catch (err) {
+        if (err instanceof NotFoundError) throw err;
+        throw new Error("token metadata resolution failed");
+      }
     }
     if (strategy.kind === "unresolved") {
       // Declared-broken row. Not reachable for Pythenians (SVM — its mint is

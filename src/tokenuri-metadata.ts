@@ -52,6 +52,23 @@ function rpcUrlForChain(chainId: number): string {
   return fallback;
 }
 
+/**
+ * SECURITY: an `RPC_URL_<chainId>` may embed a paid-provider API KEY (Alchemy /
+ * Infura put it in the path, some in the query). The full URL must NEVER appear
+ * in a thrown Error.message — those bubble through toHyperError into anonymous
+ * HTTP 500 bodies (the exact incident already in this estate's memory). Even
+ * SERVER-side logs get only the host, so a key is never written anywhere: host
+ * is enough to tell "which provider" for diagnosis; the secret lives in the
+ * path/query, which this drops.
+ */
+function rpcHostForLog(rpcUrl: string): string {
+  try {
+    return new URL(rpcUrl).host;
+  } catch {
+    return "<unparseable-rpc-url>";
+  }
+}
+
 // ── IPFS gateway config — ONE variable, shared with the dashboard ──────────
 //
 // `IPFS_GATEWAY_HOST` is a BARE HOSTNAME (e.g. "ipfs.io"), NOT a URL. That
@@ -74,16 +91,28 @@ function rpcUrlForChain(chainId: number): string {
 // as mysterious 400s on every image.
 export const DEFAULT_IPFS_GATEWAY_HOST = "ipfs.io";
 
-/** The shared gateway hostname (`IPFS_GATEWAY_HOST`), validated as a bare host. */
+// A bare, dotted hostname (FQDN): dot-separated labels of alnum + internal
+// hyphens, no scheme/port/path/whitespace/empty-labels. Deliberately stricter
+// than "no / and no :" — it must reject EVERYTHING that is not a bare hostname,
+// so that any value THIS side accepts, the dashboard's own FQDN check also
+// accepts. If mine were looser, a value could pass here, emit image URLs on a
+// host the dashboard silently rejects (it falls back to ipfs.io on mismatch),
+// and every proxied image would 400. The two validators cannot diverge if this
+// one only admits the strict subset.
+const FQDN_RE =
+  /^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+
+/** The shared gateway hostname (`IPFS_GATEWAY_HOST`), validated as a bare FQDN. */
 export function ipfsGatewayHost(): string {
   const raw = process.env.IPFS_GATEWAY_HOST?.trim();
   if (!raw) return DEFAULT_IPFS_GATEWAY_HOST;
-  // Fail closed on a URL-shaped value. The dashboard CANNOT accept one (Next's
-  // remotePatterns wants a hostname), so a URL here means the two sides are
-  // already configured to disagree — better to refuse than to half-work.
-  if (raw.includes("/") || raw.includes(":")) {
+  // Fail closed on anything that is not a bare hostname — a URL, a host:port, a
+  // path, whitespace, empty labels. The dashboard CANNOT accept those (Next's
+  // remotePatterns wants a hostname), so such a value means the two sides are
+  // already configured to disagree: better to refuse than to half-work.
+  if (!FQDN_RE.test(raw)) {
     throw new Error(
-      `IPFS_GATEWAY_HOST must be a bare hostname (e.g. "ipfs.io"), not a URL — got "${raw}". ` +
+      `IPFS_GATEWAY_HOST must be a bare hostname (e.g. "ipfs.io"), not a URL/host:port/path — got "${raw}". ` +
         `The dashboard feeds this same value to Next's images.remotePatterns, which takes a hostname.`
     );
   }
@@ -168,10 +197,33 @@ interface JsonRpcResponse {
 
 async function ethCallTokenUri(
   rpcUrl: string,
+  chainId: number,
   contract: string,
   tokenId: string,
   signal: AbortSignal
 ): Promise<string> {
+  // SECURITY: every failure below throws the SAME generic, URL-free message
+  // (`RPC request failed for chain <id>`). The `rpcUrl` — which may carry an
+  // API key — is NEVER interpolated into a thrown message, and `String(cause)`
+  // (a fetch rejection can echo the URL back) is never thrown either. The real
+  // reason is logged server-side with the host only. `chainId`/`contract`/
+  // `tokenId` are non-secret, but even those stay out of the thrown message so
+  // there is exactly one client-facing shape to reason about.
+  const fail = (reason: string, cause?: unknown): Error => {
+    const rawDetail = cause instanceof Error ? cause.message : cause ? String(cause) : "";
+    // A fetch/undici rejection can echo the FULL url (key and all) back in its
+    // message — and this goes to the SERVER LOG, a sibling exposure channel.
+    // Neutralize the one secret we know is in scope before logging: rewrite any
+    // occurrence of the configured rpcUrl to its host. Server-side logging of
+    // detail is sanctioned; writing the key to logs is not.
+    const detail = rawDetail.split(rpcUrl).join(rpcHostForLog(rpcUrl)).slice(0, 200);
+    console.warn(
+      `[inventory-api] RPC ${reason} (chain ${chainId}, host ${rpcHostForLog(rpcUrl)}, ` +
+        `contract ${contract}, token ${tokenId})${detail ? `: ${detail}` : ""}`
+    );
+    return new Error(`RPC request failed for chain ${chainId}`);
+  };
+
   const data = encodeTokenUriCalldata(tokenId);
   let res: Response;
   try {
@@ -187,26 +239,22 @@ async function ethCallTokenUri(
       signal,
     });
   } catch (cause) {
-    throw new Error(
-      `tokenURI RPC call failed for ${contract} token ${tokenId} (${rpcUrl}): ${String(cause)}`
-    );
+    throw fail("call failed", cause);
   }
   if (!res.ok) {
-    throw new Error(`tokenURI RPC returned HTTP ${res.status} for ${contract} (${rpcUrl})`);
+    throw fail(`returned HTTP ${res.status}`);
   }
   let body: JsonRpcResponse;
   try {
     body = (await res.json()) as JsonRpcResponse;
   } catch (cause) {
-    throw new Error(`tokenURI RPC JSON parse failed for ${contract} (${rpcUrl}): ${String(cause)}`);
+    throw fail("JSON parse failed", cause);
   }
   if (body.error) {
-    throw new Error(
-      `tokenURI RPC error for ${contract} token ${tokenId}: ${body.error.message ?? JSON.stringify(body.error)}`
-    );
+    throw fail("error", body.error.message ?? JSON.stringify(body.error));
   }
   if (!body.result) {
-    throw new Error(`tokenURI RPC returned no result for ${contract} token ${tokenId}`);
+    throw fail("returned no result");
   }
   return decodeAbiString(body.result);
 }
@@ -261,7 +309,7 @@ function resolveBaseUri(
 
   const promise = (async () => {
     const rpcUrl = rpcUrlForChain(chainId);
-    const raw = await ethCallTokenUri(rpcUrl, contract, tokenId, signal);
+    const raw = await ethCallTokenUri(rpcUrl, chainId, contract, tokenId, signal);
     if (!raw.endsWith(tokenId)) {
       throw new Error(
         `tokenURI shape assumption violated for ${contract}: expected it to end with ` +

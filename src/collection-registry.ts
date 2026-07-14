@@ -450,6 +450,50 @@ export function listCollectionRegistry(): readonly CollectionRegistryEntry[] {
   return COLLECTION_REGISTRY;
 }
 
+/**
+ * Public, dashboard-facing projection of ONE registry row (the `GET /collections`
+ * shape). The dashboard resolves each community's contract from this — so `id`
+ * is the primary route key (EVM checksum contract, or SVM collection mint), and
+ * `aliases` carries the alternate keys (`"azuki"`, `"pythians"`, …). No internal
+ * fields (worldSlug/metadataSlug/evmContracts) — just what a consumer needs to
+ * address a collection and know its rendering posture.
+ */
+export interface CollectionSummary {
+  /** Primary route key: EVM checksum contract, or SVM collection mint. */
+  id: string;
+  aliases: readonly string[];
+  chain: ChainType;
+  chainId: number;
+  name: string;
+  symbol: string;
+  /** Metadata resolution posture (sovereign/tokenuri/unresolved/…). */
+  metadataStrategy: MetadataStrategy["kind"];
+  /** EFFECTIVE rights policy — always concrete ("proxy" when unset), never undefined. */
+  rehost_policy: RehostPolicy;
+}
+
+function entryToSummary(entry: CollectionRegistryEntry): CollectionSummary {
+  return {
+    id: entry.id,
+    aliases: entry.aliases,
+    chain: entry.chain,
+    chainId: entry.chainId,
+    name: entry.name,
+    symbol: entry.symbol,
+    metadataStrategy: entry.metadataStrategy.kind,
+    rehost_policy: effectiveRehostPolicy(entry),
+  };
+}
+
+/**
+ * The `GET /collections` projection — every ENABLED registry row as a
+ * `CollectionSummary`. Disabled rows are withheld (a consumer must not resolve
+ * against a collection the service will reject). Stable order = registry order.
+ */
+export function listPublicCollections(): CollectionSummary[] {
+  return COLLECTION_REGISTRY.filter((e) => e.enabled).map(entryToSummary);
+}
+
 /** Resolve any `:contract` route param to a registry row, if known. */
 export function resolveCollectionRouteParam(param: string): CollectionRegistryEntry | null {
   if (_byRoute.has(param)) {

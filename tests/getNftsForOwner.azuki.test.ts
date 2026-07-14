@@ -132,9 +132,19 @@ describe("getNftsForOwner — Azuki (INV-A third-party proxy path)", () => {
     expect(result.nfts).toHaveLength(1);
     expect(result.nfts[0].tokenId).toBe("4442");
     expect(result.nfts[0].imageUrl).toBe("");
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(String(warn.mock.calls[0][0])).toContain("tokenuri metadata");
-    expect(String(warn.mock.calls[0][0])).toContain("1 failed");
+    // TWO server-side warns now: the RPC-level diagnostic (from ethCallTokenUri,
+    // host-only, added by the RPC-key-leak fix) AND the page-level degraded
+    // line. Assert the page-degraded line is present rather than an exact count
+    // — the count is an implementation detail, the degraded signal is the
+    // contract.
+    const lines = warn.mock.calls.map((c) => String(c[0]));
+    expect(lines.some((l) => l.includes("tokenuri metadata") && l.includes("1 failed"))).toBe(true);
+    // SECURITY: the RPC diagnostic logs the HOST only, never the full URL — and
+    // certainly never a key. (Full leak-regression lives in
+    // tests/tokenuri-metadata.security.test.ts.)
+    const rpcLine = lines.find((l) => l.includes("RPC"));
+    expect(rpcLine).toBeDefined();
+    expect(rpcLine).not.toMatch(/\/v2\/|\/v3\/|apikey|SUPERSECRET/i);
     warn.mockRestore();
   });
 });

@@ -21,26 +21,51 @@ import {
   getNftMetadata,
   getProfilePicture,
 } from "./inventory.js";
+import { listPublicCollections } from "./collection-registry.js";
 
 const MIBERA_CONTRACT = "0x6666397DFe9a8c469BF65dc744CB1C733416c420";
 const SAMPLE_HOLDER = "0x1111111111111111111111111111111111111111";
 
-/** Map a domain error (src/errors.ts) to a HyperError with the right status. */
+/**
+ * Map a domain error (src/errors.ts) to a HyperError with the right status.
+ *
+ * SECURITY — the 500 body is GENERIC on purpose. Only the two intentional,
+ * client-facing domain errors (ValidationError -> 400, NotFoundError -> 404,
+ * each carrying a `.code`) may surface their `.message`; those messages contain
+ * only caller-supplied input or a public tokenId/contract. EVERYTHING else — an
+ * RPC failure, a fixture-load error, an unexpected throw — collapses to a bare
+ * `500 { message: "internal error" }` with the real reason logged SERVER-SIDE
+ * only. Passing a raw `.message` to an anonymous caller is how a provider URL
+ * with an embedded API key leaks out of a 500 (the incident already in this
+ * estate's memory); a coded allowlist closes that whole class, not just the one
+ * message that happened to carry it.
+ */
 function toHyperError(e: unknown): HyperError {
   const code =
     e && typeof e === "object" && "code" in e
       ? String((e as { code: unknown }).code)
       : undefined;
-  const message = e instanceof Error ? e.message : "internal error";
   const status =
     code === "INVENTORY_INVALID_INPUT"
       ? 400
       : code === "INVENTORY_NOT_FOUND"
         ? 404
         : 500;
+
+  if (status === 500) {
+    // Never surface the raw message to the caller — log it server-side for
+    // diagnosis instead. Covers un-coded throws AND coded-but-not-client-facing
+    // ones (e.g. INVENTORY_FIXTURE_LOAD), whose messages can carry paths/URLs.
+    console.error(
+      "[inventory-api] unhandled error mapped to 500:",
+      e instanceof Error ? `${e.name}: ${e.message}` : String(e)
+    );
+    return createError({ status: 500, message: "internal error" });
+  }
+
   return createError({
     status,
-    message,
+    message: e instanceof Error ? e.message : "internal error",
     ...(code !== undefined && { code }),
     ...(status === 400 && {
       fix: "Provide a 0x-prefixed 40-char hex address / numeric tokenId.",
@@ -310,4 +335,48 @@ export const routes = new Hyper()
         ok({ address: params.address, contract, imageUrl }),
       );
     },
+  )
+  .get(
+    "/collections",
+    {
+      meta: {
+        name: "listCollections",
+        tags: ["inventory"],
+        mcp: {
+          description:
+            "List every enabled collection this service knows: its primary route key " +
+            "(id — EVM contract or SVM mint), aliases, chain/chainId, name, symbol, " +
+            "metadata strategy, and rehost policy. The discovery endpoint a client uses " +
+            "to resolve a community's contract before calling /profile or /nfts.",
+        },
+        examples: [
+          {
+            name: "all enabled collections",
+            input: {},
+            output: {
+              body: {
+                collections: [
+                  {
+                    id: MIBERA_CONTRACT,
+                    aliases: ["mibera"],
+                    chain: "evm",
+                    chainId: 80094,
+                    name: "Mibera",
+                    symbol: "MIBERA",
+                    metadataStrategy: "sovereign-world",
+                    rehost_policy: "mirror",
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    },
+    // Pure registry projection — no domain call, no input, cannot fail on user
+    // input, so it needs neither `call()` (error translation) nor a `throws`
+    // declaration. Wrapped as `{ collections: [...] }` to match this API's
+    // house style (every endpoint returns an object; cf. `/holdings` ->
+    // `{ holdings }`), so a consumer reads `.collections`.
+    () => ok({ collections: listPublicCollections() }),
   );

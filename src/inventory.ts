@@ -26,6 +26,10 @@ import {
   METADATA_FETCH_CONCURRENCY,
   METADATA_PAGE_BUDGET_MS,
 } from "./sovereign-metadata.js";
+import {
+  fetchTokenUriMetadata,
+  warnTokenUriMetadataDegraded,
+} from "./tokenuri-metadata.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import {
   resolveExternalCollection,
@@ -218,6 +222,97 @@ async function resolveSovereignPage(
   return nfts;
 }
 
+interface TokenUriRef {
+  contract: string;
+  chainId: number;
+  tokenId: string;
+  fallbackName: string;
+}
+
+function imagelessTokenUriNFT(ref: TokenUriRef): NFT {
+  return {
+    tokenId: ref.tokenId,
+    name: ref.fallbackName,
+    description: "",
+    imageUrl: "",
+    contentType: DEFAULT_CONTENT_TYPE,
+    attributes: [],
+  };
+}
+
+/**
+ * Resolve one page of tokens against a third-party ("proxy") tokenURI source
+ * (src/tokenuri-metadata.ts). Same fail-soft-per-token / bounded-concurrency /
+ * page-budget contract as `resolveSovereignPage` above — see that function's
+ * doc comment for the NotFoundError-vs-degraded distinction, which applies
+ * identically here.
+ */
+async function resolveTokenUriPage(refs: TokenUriRef[], label: string): Promise<NFT[]> {
+  if (refs.length === 0) return [];
+
+  const pageBudget = AbortSignal.timeout(METADATA_PAGE_BUDGET_MS);
+  let failed = 0;
+  let skipped = 0;
+  let firstError: unknown;
+
+  const nfts = await mapWithConcurrency(refs, METADATA_FETCH_CONCURRENCY, async (ref) => {
+    if (pageBudget.aborted) {
+      skipped += 1;
+      return imagelessTokenUriNFT(ref);
+    }
+    try {
+      const doc = await fetchTokenUriMetadata(ref.contract, ref.chainId, ref.tokenId, {
+        signal: pageBudget,
+      });
+      return metadataDocumentToNFT(ref.tokenId, doc);
+    } catch (err) {
+      if (err instanceof NotFoundError) return imagelessTokenUriNFT(ref);
+      failed += 1;
+      if (firstError === undefined) firstError = err;
+      return imagelessTokenUriNFT(ref);
+    }
+  });
+
+  if (failed > 0 || skipped > 0) {
+    warnTokenUriMetadataDegraded(label, { failed, skipped, total: refs.length }, firstError);
+  }
+  return nfts;
+}
+
+/**
+ * A collection has NO working metadata source and we know it (registry declared
+ * `metadataStrategy: { kind: "unresolved" }`). Not a degradation — a standing,
+ * declared defect. Says the `reason` every time so the blocker is in the log,
+ * not just in a source comment nobody greps.
+ */
+function warnMetadataUnresolved(label: string, reason: string, tokenCount: number): void {
+  if (tokenCount === 0) return;
+  console.warn(
+    `[inventory-api] metadata unresolved for ${label}; ` +
+      `returning ${tokenCount} imageless NFT(s) (real ids + names, no art). ` +
+      `This is a DECLARED defect, not an outage — reason: ${reason}`
+  );
+}
+
+/**
+ * Sort tokenIds ascending for "lowest token id held" selection
+ * (getProfilePicture, INV-A) — but ONLY when EVERY id is a pure decimal
+ * integer (true for every EVM tokenId in this registry, BigInt-safe against
+ * arbitrarily large ids). SVM identifiers (e.g. Pythenians) are Metaplex
+ * mint addresses, not ordinals — they have no "lowest" in any meaningful
+ * sense, and sorting them lexicographically would silently change WHICH
+ * token gets picked with no numeric-ID story behind it. A non-numeric (or
+ * mixed) list is returned unchanged — same indexer/fixture order as before.
+ */
+function sortTokenIdsAscendingIfNumeric(tokenIds: string[]): string[] {
+  if (!tokenIds.every((id) => /^\d+$/.test(id))) return tokenIds;
+  return [...tokenIds].sort((a, b) => {
+    const bigA = BigInt(a);
+    const bigB = BigInt(b);
+    return bigA < bigB ? -1 : bigA > bigB ? 1 : 0;
+  });
+}
+
 async function getExternalNftsForOwner(
   address: string,
   col: ExternalCollection,
@@ -268,23 +363,66 @@ async function getExternalNftsForOwner(
     }
   }
 
+  // getProfilePicture-only: see GetNftsForOwnerOptions.sortTokenIds. Sorting
+  // the FULL raw list before pagination — not the resolved page — is what
+  // keeps this cheap: only the (already-bounded) page gets its metadata
+  // resolved either way.
+  if (options.sortTokenIds === "ascending") {
+    tokenIds = sortTokenIdsAscendingIfNumeric(tokenIds);
+  }
+
   const { page, nextPageKey } = applyPagination(
     tokenIds,
     options.pageSize ?? 100,
     options.pageKey
   );
 
-  const nfts = await resolveSovereignPage(
-    page.map((tokenId) => ({
-      world: col.metadataWorld,
-      slug: col.metadataSlug,
-      contract: col.id,
+  let nfts: NFT[];
+  if (col.metadataStrategy.kind === "tokenuri") {
+    nfts = await resolveTokenUriPage(
+      page.map((tokenId) => ({
+        contract: col.evmContract!,
+        chainId: col.chainId,
+        tokenId,
+        fallbackName: nameByTokenId.get(tokenId) ?? tokenId,
+      })),
+      col.sonarCollectionKey
+    );
+  } else if (col.metadataStrategy.kind === "sovereign") {
+    nfts = await resolveSovereignPage(
+      page.map((tokenId) => ({
+        world: col.metadataWorld,
+        slug: col.metadataSlug,
+        contract: col.id,
+        tokenId,
+        numericTokenId: col.vm === "evm",
+        fallbackName: nameByTokenId.get(tokenId) ?? tokenId,
+      })),
+      col.metadataSlug ?? col.metadataWorld
+    );
+  } else if (col.metadataStrategy.kind === "unresolved") {
+    // Declared-broken (Pythenians today). We know there is no metadata source
+    // we can actually read, so DON'T pretend: skip the network entirely and
+    // return the real tokenIds + real names (sonar publishes those) with no
+    // image. Warned once per page — the visible outcome for a holder is what
+    // it already was (no image), but it is now stated rather than arrived at
+    // silently via a 404 per token against a CDN that holds nothing.
+    warnMetadataUnresolved(col.sonarCollectionKey, col.metadataStrategy.reason, page.length);
+    nfts = page.map((tokenId) => ({
       tokenId,
-      numericTokenId: col.vm === "evm",
-      fallbackName: nameByTokenId.get(tokenId) ?? tokenId,
-    })),
-    col.metadataSlug ?? col.metadataWorld
-  );
+      name: nameByTokenId.get(tokenId) ?? tokenId,
+      description: "",
+      imageUrl: "",
+      contentType: DEFAULT_CONTENT_TYPE,
+      attributes: [],
+    }));
+  } else {
+    // Unreachable today: no external row is "codex"/"sovereign-world".
+    throw new Error(
+      `external collection ${col.id} declares metadataStrategy "${col.metadataStrategy.kind}", ` +
+        `unsupported by getExternalNftsForOwner`
+    );
+  }
 
   return {
     contractAddress: col.id,
@@ -330,6 +468,11 @@ export async function getNftsForOwner(
       .map((t) => t.tokenId);
   }
 
+  // getProfilePicture-only: see GetNftsForOwnerOptions.sortTokenIds.
+  if (options.sortTokenIds === "ascending") {
+    tokenIds = sortTokenIdsAscendingIfNumeric(tokenIds);
+  }
+
   const { page, nextPageKey } = applyPagination(
     tokenIds,
     options.pageSize ?? 100,
@@ -346,6 +489,16 @@ export async function getNftsForOwner(
     // wrong URL shape — and never resolve an owner-list against the codex fixture again.
     throw new Error(
       `registry row ${entry.id} declares metadataStrategy "codex", unsupported by getNftsForOwner`
+    );
+  }
+  if (strategy.kind === "tokenuri" || strategy.kind === "unresolved") {
+    // Unreachable today: every registered "tokenuri" (Azuki) / "unresolved"
+    // (Pythenians) row is external, handled by getExternalNftsForOwner before
+    // this function is reached. Guard rather than silently fall through to the
+    // sovereign URL shape.
+    throw new Error(
+      `registry row ${entry.id} declares metadataStrategy "${strategy.kind}", unsupported by ` +
+        `getNftsForOwner's registered-collection path (external path only)`
     );
   }
   const slug = strategy.kind === "sovereign" ? strategy.slug : null;
@@ -380,7 +533,13 @@ export async function getProfilePicture(
   options: { contract?: string } = {}
 ): Promise<string | null> {
   const contract = options.contract ?? MIBERA_CONTRACT;
-  const collection = await getNftsForOwner(address, contract, { pageSize: 1 });
+  // sortTokenIds: "ascending" + pageSize: 1 resolves the LOWEST held token
+  // deterministically ("your Azuki #4442"), not whatever the indexer/fixture
+  // happened to return first — see GetNftsForOwnerOptions.sortTokenIds.
+  const collection = await getNftsForOwner(address, contract, {
+    pageSize: 1,
+    sortTokenIds: "ascending",
+  });
   const first = collection.nfts[0];
   return first && first.imageUrl.length > 0 ? first.imageUrl : null;
 }
@@ -412,6 +571,32 @@ export async function getNftMetadata(
         checksummedContract,
         tokenId
       );
+    }
+    if (strategy.kind === "tokenuri") {
+      // Contain the error at this seam — the single-token path had no catch,
+      // unlike the bulk owner-list path (resolveTokenUriPage). A NotFoundError
+      // is the intentional 404; ANY other throw (RPC/network/parse) is
+      // sanitized to a generic, detail-free error so nothing upstream — a
+      // provider URL, an embedded API key — can ride a raw `.message` out
+      // through toHyperError. fetchTokenUriMetadata already throws URL-free
+      // after the RPC-leak fix; this is the same belt-and-suspenders the bulk
+      // path has. (Deliberately NOT a blank-200 fail-soft: a single-token
+      // lookup returning empty metadata would misreport a transient RPC blip as
+      // "this token has no metadata"; the bulk path only fail-softs to protect
+      // the OTHER tokens in a page, which does not apply to one token.)
+      try {
+        return await fetchTokenUriMetadata(checksummedContract, entry.chainId, tokenId);
+      } catch (err) {
+        if (err instanceof NotFoundError) throw err;
+        throw new Error("token metadata resolution failed");
+      }
+    }
+    if (strategy.kind === "unresolved") {
+      // Declared-broken row. Not reachable for Pythenians (SVM — its mint is
+      // not a valid EVM contract, so validateEvmAddress rejects it above), but
+      // guard anyway: NEVER fall through to the codex fixture, which would
+      // answer with Mibera metadata for someone else's collection.
+      throw new NotFoundError(tokenId, contract);
     }
   }
 

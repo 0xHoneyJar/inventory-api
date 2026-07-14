@@ -1,47 +1,49 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { getProfilePicture } from "../src/inventory.js";
 import { ValidationError } from "../src/errors.js";
 import { PURUPURU_CONTRACT } from "../src/collection-registry.js";
-import { sovereignMetadataUrl } from "../src/sovereign-metadata.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PKG_ROOT = path.resolve(__dirname, "..");
 
 const PYTHIANS_HOLDER = "HdLiAKti95C7eNK78bfPEKbUrSP1roZgWxDnsbyWXour";
-const PYTHIANS_MINT = "PytheniansMint3180Example1111111111111111111";
 
-const pytheniansMetadataFixture = JSON.parse(
-  readFileSync(path.join(PKG_ROOT, "fixtures/pythenians-metadata.json"), "utf-8")
-);
+// NOTE (INV-A): `fixtures/pythenians-metadata.json` is deliberately NOT loaded
+// here anymore — see tests/getNftsForOwner.external.test.ts. Asserting an image
+// served from a fixture the real host does not serve is how this suite stayed
+// green while every pythenians holder rendered a grey box.
 
 describe("getProfilePicture — external communities (INV-3)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("returns pythenians sovereign image for SVM holder via collection_key alias", async () => {
+  // REWRITTEN (INV-A, 2026-07-13). This asserted that the sovereign route
+  // serves pythenians art — it does not, and never did. The old test stubbed
+  // `fetch` to return `fixtures/pythenians-metadata.json` and then asserted the
+  // image from that same fixture: a closed loop that could only ever pass. The
+  // live host 404s on every pythenians path, we hold no rights to mirror it,
+  // and sonar publishes no `uri` to proxy to — so the row is now declared
+  // `unresolved` and the honest answer is null.
+  it("returns null for pythenians — no working metadata source, and makes NO network call", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("fetch", async (url: string) => {
-      expect(url).toBe(sovereignMetadataUrl("pythenians", "pythians", PYTHIANS_MINT));
-      return new Response(JSON.stringify(pytheniansMetadataFixture[PYTHIANS_MINT]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      throw new Error(`unresolved row must make no network call, attempted: ${String(url)}`);
     });
 
     const pfp = await getProfilePicture(PYTHIANS_HOLDER, { contract: "pythians" });
 
-    expect(pfp).toBe("https://ipfs.pythenians.xyz/nft/example3180.png");
+    expect(pfp).toBeNull();
+    // The defect is declared out loud, with its reason, not swallowed.
+    expect(warn).toHaveBeenCalled();
+    const line = String(warn.mock.calls[0][0]);
+    expect(line).toContain("metadata unresolved");
+    expect(line).toContain("DECLARED defect");
+    warn.mockRestore();
   });
 
-  it("returns null when pythenians metadata is absent (consumer fallback)", async () => {
-    vi.stubGlobal("fetch", async () => new Response("", { status: 404 }));
-
+  it("returns null via the pythenians alias too", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const pfp = await getProfilePicture(PYTHIANS_HOLDER, { contract: "pythenians" });
-
     expect(pfp).toBeNull();
+    warn.mockRestore();
   });
 
   it("returns null for purupuru holder with no indexed Base holdings yet", async () => {

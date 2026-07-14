@@ -55,6 +55,37 @@ describe("HTTP routes (via app.fetch)", () => {
     expect(body.completeness.source).toBe("sonar");
   });
 
+  it("GET /collections projects the enabled registry (the dashboard discovery seam)", async () => {
+    const res = await get("/collections");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.collections)).toBe(true);
+    expect(body.collections.length).toBeGreaterThan(0);
+
+    // Every row carries the fields the dashboard resolves a community from.
+    for (const c of body.collections) {
+      expect(typeof c.id).toBe("string");
+      expect(Array.isArray(c.aliases)).toBe(true);
+      expect(["evm", "svm"]).toContain(c.chain);
+      expect(typeof c.chainId).toBe("number");
+      expect(typeof c.name).toBe("string");
+      // rehost_policy is ALWAYS concrete — never undefined.
+      expect(["mirror", "proxy", "excluded"]).toContain(c.rehost_policy);
+    }
+
+    const byKey = (k: string) =>
+      body.collections.find(
+        (c: { id: string; aliases: string[] }) => c.id === k || c.aliases.includes(k),
+      );
+    // Mibera is ours -> mirror; Azuki is third-party -> proxy; Pythenians is
+    // the declared-broken proxy row.
+    expect(byKey("mibera").rehost_policy).toBe("mirror");
+    expect(byKey("azuki").rehost_policy).toBe("proxy");
+    expect(byKey("azuki").metadataStrategy).toBe("tokenuri");
+    expect(byKey("pythians").rehost_policy).toBe("proxy");
+    expect(byKey("pythians").metadataStrategy).toBe("unresolved");
+  });
+
   it("GET /holdings/:address forwards the contracts query option", async () => {
     const res = await get(`/holdings/${HOLDER}?contracts=${MIBERA}`);
     expect(res.status).toBe(200);
@@ -139,7 +170,7 @@ describe("OpenAPI 3.1 surface", () => {
 });
 
 describe("MCP surface", () => {
-  it("serves /.well-known/mcp.json with the 4 tools", async () => {
+  it("serves /.well-known/mcp.json with the 5 tools", async () => {
     const res = await get("/.well-known/mcp.json");
     expect(res.status).toBe(200);
     const manifest = await res.json();
@@ -149,6 +180,7 @@ describe("MCP surface", () => {
       "getNftMetadata",
       "getNftsForOwner",
       "getProfilePicture",
+      "listCollections", // GET /collections — added for the dashboard seam (INV-A)
     ]);
   });
 
@@ -175,6 +207,6 @@ describe("MCP surface", () => {
 
   it("buildMCPManifest matches the served manifest", async () => {
     const manifest = buildMCPManifest();
-    expect(manifest.tools).toHaveLength(4);
+    expect(manifest.tools).toHaveLength(5);
   });
 });

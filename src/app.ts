@@ -18,6 +18,7 @@ import { openapiHandlers, generate, type OpenAPIDoc } from "@hyper/openapi";
 import { zodConverter } from "@hyper/openapi-zod";
 import { mcpServer } from "@hyper/mcp";
 import { routes } from "./routes.js";
+import { assertIpfsGatewaySeam } from "./tokenuri-metadata.js";
 import beacon from "../packages/protocol/beacon.json";
 
 export const OPENAPI_CONFIG = {
@@ -89,6 +90,12 @@ export const app = new Hyper({ name: "inventory-api" })
 // import.meta.main, which is false when imported by tests / emit scripts).
 if (import.meta.main) {
   const port = Number(process.env.PORT) || 8787;
+  // Surface the IPFS-gateway seam at boot. This host is SHARED with the
+  // dashboard, which bakes it in at build time — a runtime-only env change
+  // silently breaks every proxied image, so it gets said out loud once, here,
+  // rather than discovered as a wall of 400s. Throws on a URL-shaped value
+  // (fail closed at startup, not per-request).
+  assertIpfsGatewaySeam();
   // Bind 0.0.0.0 (not Hyper's localhost default) so the platform healthcheck
   // can reach the container — root cause of the Railway deploy failures.
   app.listen({ port, hostname: "0.0.0.0" });

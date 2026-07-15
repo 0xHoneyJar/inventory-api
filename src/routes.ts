@@ -187,7 +187,7 @@ export const routes = new Hyper()
         tags: ["inventory"],
         mcp: {
           description:
-            "Get the paginated list of NFTs (with full metadata: name, image, attributes) " +
+            "Get the paginated list of NFTs (name, image, optional canonical metadataUri, attributes) " +
             "owned by a wallet for a given contract. Supports pageSize + pageKey cursoring.",
         },
         examples: [

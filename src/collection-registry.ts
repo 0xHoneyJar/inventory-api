@@ -150,6 +150,11 @@ export const FRACTURED_ADDRESSES = [
 export const PYTHIANS_COLLECTION_MINT =
   "pyTh2UtBKfuDW6KCdT3swospYeoLmmKaGujWA91Moru";
 
+/** Mad Lads — SVM external collection. Sonar collection_key is "mad_lads". */
+export const MAD_LADS_COLLECTION_MINT =
+  "J1S9H3QjnRtBbbuD4HjPV6RpRhwuk4zKbxsnCHuTgh9w";
+export const MAD_LADS_COLLECTION_KEY = "mad_lads";
+
 /** Purupuru — EVM on Base (8453). */
 export const PURUPURU_CONTRACT = "0x6CfB9280767a3596Ee6af887D900014a755ffc75";
 
@@ -312,6 +317,26 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     // ipfs.pythenians.xyz URLs (Pythenians' own IPFS gateway, per the DAS
     // fixture this row was verified against).
     imageHost: ["ipfs.pythenians.xyz"],
+  },
+  {
+    id: MAD_LADS_COLLECTION_MINT,
+    chain: "svm",
+    chainId: 101,
+    collectionKey: MAD_LADS_COLLECTION_KEY,
+    worldSlug: "mad-lads",
+    metadataSlug: "mad-lads",
+    name: "Mad Lads",
+    symbol: "",
+    totalSupply: 10_000,
+    aliases: ["mad_lads", "mad-lads", "madlads"],
+    // Third-party art: pass through Sonar's DAS-resolved pointer only. The
+    // ownership query is constrained by both owner + collection_key before
+    // this strategy sees a token, so Inventory never becomes a public mirror.
+    metadataStrategy: { kind: "sonar-image" },
+    external: true,
+    enabled: true,
+    svmCollectionMint: MAD_LADS_COLLECTION_MINT,
+    rehost_policy: "proxy",
   },
   {
     id: PURUPURU_CONTRACT,

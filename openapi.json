@@ -403,6 +403,39 @@
           }
         }
       }
+    },
+    "/collections": {
+      "get": {
+        "operationId": "listCollections",
+        "tags": [
+          "inventory"
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "collections": [
+                    {
+                      "id": "0x6666397DFe9a8c469BF65dc744CB1C733416c420",
+                      "aliases": [
+                        "mibera"
+                      ],
+                      "chain": "evm",
+                      "chainId": 80094,
+                      "name": "Mibera",
+                      "symbol": "MIBERA",
+                      "metadataStrategy": "sovereign-world",
+                      "rehost_policy": "mirror"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

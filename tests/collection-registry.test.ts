@@ -10,6 +10,8 @@ import {
   MIBERA_CONTRACT,
   MST_CONTRACT,
   PYTHIANS_COLLECTION_MINT,
+  MAD_LADS_COLLECTION_MINT,
+  MAD_LADS_COLLECTION_KEY,
   PURUPURU_CONTRACT,
   AZUKI_CONTRACT,
   AZUKI_CHAIN_ID,
@@ -53,6 +55,17 @@ describe("collection-registry v2", () => {
     expect(resolveCollectionRouteParam("pythians")?.collectionKey).toBe("pythians");
     expect(resolveCollectionRouteParam("pythenians")?.chain).toBe("svm");
     expect(resolveExternalCollection("pythians")?.sonarCollectionKey).toBe("pythians");
+  });
+
+  it("registers Mad Lads as an ownership-gated SVM proxy, never a mirror", () => {
+    const entry = resolveCollectionRouteParam(MAD_LADS_COLLECTION_MINT)!;
+    expect(entry.collectionKey).toBe(MAD_LADS_COLLECTION_KEY);
+    expect(entry.chain).toBe("svm");
+    expect(entry.chainId).toBe(101);
+    expect(entry.metadataStrategy).toEqual({ kind: "sonar-image" });
+    expect(entry.rehost_policy).toBe("proxy");
+    expect(resolveCollectionRouteParam("mad-lads")?.id).toBe(MAD_LADS_COLLECTION_MINT);
+    expect(resolveExternalCollection("madlads")?.sonarCollectionKey).toBe("mad_lads");
   });
 
   it("resolves purupuru by checksum contract and alias", () => {

@@ -64,6 +64,7 @@ describe("collection-registry v2", () => {
     expect(entry.chainId).toBe(101);
     expect(entry.metadataStrategy).toEqual({ kind: "sonar-image" });
     expect(entry.rehost_policy).toBe("proxy");
+    expect(entry.imageHost).toEqual(["madlads.s3.us-west-2.amazonaws.com"]);
     expect(resolveCollectionRouteParam("mad-lads")?.id).toBe(MAD_LADS_COLLECTION_MINT);
     expect(resolveExternalCollection("madlads")?.sonarCollectionKey).toBe("mad_lads");
   });

@@ -91,6 +91,9 @@ describe("HTTP routes (via app.fetch)", () => {
     expect(byKey("pythians").metadataStrategy).toBe("sonar-image");
     // PYTH-2: the dashboard image-optimizer allowlist seam — a real host.
     expect(byKey("pythians").imageHost).toEqual(["ipfs.pythenians.xyz"]);
+    expect(byKey("mad_lads").imageHost).toEqual([
+      "madlads.s3.us-west-2.amazonaws.com",
+    ]);
     // A host-less row OMITS the key entirely (absent after JSON round-trip),
     // NOT `imageHost: null`. PYTH-3's effect Schema tolerates absent but
     // throws on explicit null — one null row would blank the whole registry.
@@ -111,6 +114,9 @@ describe("HTTP routes (via app.fetch)", () => {
     expect(raw).not.toContain('"imageHost": null');
     // ...and the one real host DID make it onto the wire (not omitted too).
     expect(raw).toContain('"imageHost":["ipfs.pythenians.xyz"]');
+    expect(raw).toContain(
+      '"imageHost":["madlads.s3.us-west-2.amazonaws.com"]',
+    );
   });
 
   it("GET /holdings/:address forwards the contracts query option", async () => {

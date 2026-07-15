@@ -337,6 +337,9 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     enabled: true,
     svmCollectionMint: MAD_LADS_COLLECTION_MINT,
     rehost_policy: "proxy",
+    // Published for Dashboard's build-time next/image allowlist. Exact host
+    // observed on every row in the live Mad Lads DAS snapshot.
+    imageHost: ["madlads.s3.us-west-2.amazonaws.com"],
   },
   {
     id: PURUPURU_CONTRACT,

@@ -31,6 +31,8 @@ export interface NFT {
   name: string;
   description: string;
   imageUrl: string;
+  /** Canonical upstream metadata pointer when the source publishes one. Never rehosted implicitly. */
+  metadataUri?: string;
   contentType: string;
   attributes: Attribute[];
 }

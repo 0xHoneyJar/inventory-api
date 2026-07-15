@@ -326,9 +326,10 @@ async function getExternalNftsForOwner(
   // `col.vm === "svm"` rows. Passed straight through by the `sonar-image`
   // strategy arm below (zero fetch of our own).
   let imageByTokenId = new Map<string, string | null>();
+  let uriByTokenId = new Map<string, string | null>();
 
   if (col.vm === "svm") {
-    let rows: { nftMint: string; name: string | null; image: string | null }[] = [];
+    let rows: { nftMint: string; name: string | null; image: string | null; uri: string | null }[] = [];
     if (liveSonar.isLiveMode()) {
       try {
         rows = await liveSonar.liveSvmNftsForOwner(owner, col.sonarCollectionKey);
@@ -345,6 +346,7 @@ async function getExternalNftsForOwner(
     tokenIds = rows.map((r) => r.nftMint);
     nameByTokenId = new Map(rows.map((r) => [r.nftMint, r.name]));
     imageByTokenId = new Map(rows.map((r) => [r.nftMint, r.image]));
+    uriByTokenId = new Map(rows.map((r) => [r.nftMint, r.uri]));
   } else {
     const evmContract = col.evmContract!;
     const checksummedContract = toChecksumAddress(evmContract);
@@ -417,6 +419,7 @@ async function getExternalNftsForOwner(
       name: nameByTokenId.get(tokenId) ?? tokenId,
       description: "",
       imageUrl: imageByTokenId.get(tokenId) ?? "",
+      ...(uriByTokenId.get(tokenId) ? { metadataUri: uriByTokenId.get(tokenId)! } : {}),
       contentType: DEFAULT_CONTENT_TYPE,
       attributes: [],
     }));

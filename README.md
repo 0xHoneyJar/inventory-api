@@ -77,3 +77,11 @@ model that index is **sonar's to publish**, not inventory's to derive. See
 Built 2026-05-23: cycle-1 skeleton via the `/spiral` autonomous harness → real Mibera codex schema
 + fixtures → live belt-gateway wiring. `cycle_state: candidate`. The Mibera codex schema and grail
 data are real (`mibera-codex`); regenerate fixtures with `fixtures/generate-fixtures.py`.
+
+## CR-108 identity backfill
+
+Planning + append-only ledger for migrating curated registry rows into CR-001
+cross-VM identities (before shared-work keys may trust them). See
+[`docs/identity-backfill-runbook.md`](docs/identity-backfill-runbook.md) for
+source precedence, dry-run/apply/rollback/revoke, cutover, and why this code
+does **not** by itself claim production migration or Ordering/G2B release.

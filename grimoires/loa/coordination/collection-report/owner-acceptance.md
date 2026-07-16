@@ -8,6 +8,7 @@
 **Document version:** `1.0`
 **Accepted by:** Inventory boundary owner role under the `ACCEPT-INVENTORY` dispatch (technical acceptance only)
 **Recorded by:** `@zkSoju`, as the dispatch operator and PR author; this records provenance, not human production approval. A role rotation may replace the recorder only through a later dispatch-referenced acceptance record.
+**Independent owner attestation:** `pending` — no independent Inventory boundary owner or reviewer has signed this record. This PR prepares the conditional technical record; it does not close human owner acceptance or authorize production.
 **Acceptance recorded at:** `2026-07-16T01:36:54-07:00`
 **Verdict:** `conditional`
 **Supersession:** Only a later, dispatch-referenced revision of this file carrying a new document version, acceptance record, and source snapshots may replace this verdict. Evidence invalidation, a failed required re-audit, or withdrawal of a bound coordinator artifact immediately makes this record `stale / blocked` pending supersession; absence of a replacement never preserves usability.

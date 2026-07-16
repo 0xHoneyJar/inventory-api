@@ -603,6 +603,9 @@ function recordDigestMaterial(
   return {
     schema_version: content.schema_version,
     collection_key: content.collection_key,
+    ...(content.identity.collection_key !== undefined
+      ? { identity_collection_key: content.identity.collection_key }
+      : {}),
     identity_version: content.identity_version,
     collection_id: content.identity.collection_id,
     deployment_ids: content.identity.deployments.map(

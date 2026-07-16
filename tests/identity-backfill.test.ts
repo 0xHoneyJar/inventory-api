@@ -37,6 +37,7 @@ import {
   decodeBackfillEvidence,
   planIdentityBackfill,
   stateDigestOf,
+  mintRecordDigest,
   mintOperatorAssertionDigest,
   decodeOperatorEquivalenceAssertion,
   mintInventoryDigest,
@@ -55,12 +56,14 @@ import {
   reconciliationReportOf,
   serializeBackfillLedger,
   deserializeBackfillLedger,
+  replayBackfillLedger,
   decodeQuarantineImpactSet,
   BackfillAuthorityError,
   BackfillParityError,
   BackfillCommandConflictError,
   BackfillRevocationError,
   BackfillStalePlanError,
+  BackfillIntegrityError,
   type QuarantineImpactSet,
   type PostAuthorityMutationResult,
   type BackfillLedger,
@@ -716,6 +719,80 @@ describe("CR-108 ledger: apply / rollback / CAS / command idempotency", () => {
     ).toThrow(BackfillCommandConflictError);
   });
 
+  it("exact update-command replay survives rollback removing its materialized target", () => {
+    const registry = subsetRegistry("mibera");
+    const initial = createBackfillLedger();
+    const { ledger: created } = applyClean(
+      initial,
+      registry,
+      emptyEvidence(),
+      "cmd:rollback-retry-create"
+    );
+    const ref = registryDeploymentRefsOf(registry[0]!)[0]!;
+    const observed = decodeBackfillEvidence({
+      schema_version: 1,
+      observations: [
+        {
+          schema_version: 1,
+          kind: "deployment",
+          deployment: ref,
+          collection_key: "mibera",
+          observed_at: TS,
+          source_reference: "sonar:rollback-retry",
+        },
+      ],
+      proxy_implementations: [],
+      operator_assertions: [],
+    });
+    const update = planIdentityBackfill({
+      registry,
+      current_records: created.records,
+      evidence: observed,
+      registry_observed_at: TS,
+    });
+    expect(update.counts.update).toBe(1);
+    const applyOptions = {
+      applied_at: TS,
+      command_id: "cmd:rollback-retry-update",
+      expected_state_digest: created.state_digest,
+    };
+    const updated = applyBackfillPlan(created, update, applyOptions);
+    const rolledBack = rollbackBackfill(updated, {
+      through_sequence: 0,
+      reason: "remove all materialized records",
+      rolled_back_at: TS,
+      command_id: "cmd:rollback-retry-rewind",
+      expected_state_digest: updated.state_digest,
+    });
+    expect(rolledBack.records).toHaveLength(0);
+
+    const replayed = applyBackfillPlan(rolledBack, update, applyOptions);
+    expect(replayed).toBe(rolledBack);
+    expect(replayed.events).toHaveLength(rolledBack.events.length);
+
+    expect(() =>
+      applyBackfillPlan(rolledBack, update, {
+        ...applyOptions,
+        applied_at: "2026-07-16T01:00:00.000Z",
+      })
+    ).toThrow(BackfillCommandConflictError);
+
+    const nonIdentical = {
+      ...update,
+      items: update.items.map((item) =>
+        item.proposed === undefined
+          ? item
+          : {
+              ...item,
+              proposed: { ...item.proposed, collection_key: "grafted-key" },
+            }
+      ),
+    };
+    expect(() => applyBackfillPlan(rolledBack, nonIdentical, applyOptions)).toThrow(
+      BackfillIntegrityError
+    );
+  });
+
   it("CAS refuses stale expected_state_digest", () => {
     const registry = subsetRegistry("mibera");
     const ledger = createBackfillLedger();
@@ -751,6 +828,103 @@ describe("CR-108 ledger: apply / rollback / CAS / command idempotency", () => {
     const again = deserializeBackfillLedger(text);
     expect(again.state_digest.digest).toBe(ledger.state_digest.digest);
     expect(again.events.length).toBe(ledger.events.length);
+  });
+
+  it("strict replay rejects excess event fields and full-digest identity grafts", () => {
+    const registry = subsetRegistry("mibera");
+    const { ledger: applied } = applyClean(
+      createBackfillLedger(),
+      registry,
+      emptyEvidence(),
+      "cmd:strict-replay-apply"
+    );
+    const first = applied.events[0]!;
+
+    expect(() => replayBackfillLedger([{ ...first, unexpected: true }])).toThrow(
+      BackfillIntegrityError
+    );
+    expect(() =>
+      replayBackfillLedger([
+        {
+          ...first,
+          event_digest: {
+            ...first.event_digest,
+            domain: "inventory.grafted-event-domain",
+          },
+        },
+      ])
+    ).toThrow(BackfillIntegrityError);
+
+    const rolledBack = rollbackBackfill(applied, {
+      through_sequence: 0,
+      reason: "exercise chain link",
+      rolled_back_at: TS,
+      command_id: "cmd:strict-replay-rollback",
+      expected_state_digest: applied.state_digest,
+    });
+    const second = rolledBack.events[1]!;
+    if (second.prev_event_digest === undefined) {
+      throw new Error("expected second event to carry a previous-event digest");
+    }
+    const { event_digest: storedEventDigest, ...secondContent } = second;
+    void storedEventDigest;
+    const graftedLinkContent = {
+      ...secondContent,
+      prev_event_digest: {
+        ...second.prev_event_digest,
+        domain: "inventory.grafted-link-domain",
+      },
+    };
+    const graftedLink = {
+      ...graftedLinkContent,
+      event_digest: mintInventoryDigest("inventory.backfill-event", 1, graftedLinkContent),
+    };
+    expect(() => replayBackfillLedger([first, graftedLink])).toThrow(
+      BackfillIntegrityError
+    );
+  });
+
+  it("record integrity binds and verifies the embedded collection_key", () => {
+    const registry = subsetRegistry("mibera");
+    const { ledger } = applyClean(
+      createBackfillLedger(),
+      registry,
+      emptyEvidence(),
+      "cmd:key-binding-apply"
+    );
+    const event = ledger.events[0]!;
+    if (event.kind !== "backfill_applied") {
+      throw new Error("expected first event to be a backfill apply");
+    }
+    const record = event.created[0]!;
+    const { record_digest: storedRecordDigest, ...recordContent } = record;
+    void storedRecordDigest;
+    const mismatchedRecordContent = {
+      ...recordContent,
+      identity: { ...record.identity, collection_key: "not-mibera" },
+    };
+    const mismatchedRecord = {
+      ...mismatchedRecordContent,
+      record_digest: mintRecordDigest(mismatchedRecordContent),
+    };
+    const { event_digest: storedEventDigest, ...eventContent } = event;
+    void storedEventDigest;
+    const mismatchedEventContent = {
+      ...eventContent,
+      created: [mismatchedRecord],
+    };
+    const mismatchedEvent = {
+      ...mismatchedEventContent,
+      event_digest: mintInventoryDigest(
+        "inventory.backfill-event",
+        1,
+        mismatchedEventContent
+      ),
+    };
+
+    expect(() => replayBackfillLedger([mismatchedEvent])).toThrow(
+      /embedded identity collection_key/
+    );
   });
 });
 

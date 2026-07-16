@@ -57,7 +57,7 @@ import {
   decodeCollectionWorkKeyMaterial,
   digestCollectionWorkKey,
   makeCollectionIdentity,
-  type CollectionIdentity,
+  CollectionIdentity,
 } from "@freeside/collection-protocol";
 import {
   IDENTITY_BACKFILL_CONTRACT_VERSION,
@@ -77,6 +77,8 @@ import {
   type BackfillRecordStatus,
   type OperatorEquivalenceAssertion,
   type RecordedProxyImplementation,
+  BACKFILL_ACTIONS,
+  BACKFILL_REASON_CODES,
   mintPlanDigest,
 } from "./identity-backfill.js";
 import {
@@ -363,11 +365,22 @@ function recordKeyOf(pointer: { collection_key: string; identity_version: number
   return `${pointer.collection_key}#${pointer.identity_version}`;
 }
 
+function sameVersionedDigest(left: VersionedDigest, right: VersionedDigest): boolean {
+  return (
+    left.algorithm === right.algorithm &&
+    left.domain === right.domain &&
+    left.major_version === right.major_version &&
+    left.digest === right.digest
+  );
+}
+
 // ── Structural event validation (strict envelopes + protocol re-verification) ─
 
 const STRICT = { errors: "all", onExcessProperty: "error" } as const;
 const NonEmptyString = Schema.String.pipe(Schema.minLength(1));
 const PositiveInt = Schema.Number.pipe(Schema.int(), Schema.positive());
+const Integer = Schema.Number.pipe(Schema.int());
+const NonNegativeInt = Integer.pipe(Schema.nonNegative());
 
 const WorkRowReferenceSchema = Schema.Struct({
   work_key: VersionedDigest,
@@ -424,13 +437,110 @@ const RecordContentEnvelope = Schema.Struct({
   schema_version: Schema.Literal(1),
   collection_key: NonEmptyString,
   identity_version: PositiveInt,
-  identity: Schema.Unknown,
-  provenance: Schema.Array(Schema.Unknown).pipe(Schema.minItems(1)),
+  identity: CollectionIdentity,
+  provenance: Schema.Array(Provenance).pipe(Schema.minItems(1)),
   proxy_implementations: Schema.Array(RecordedProxyImplementationSchema),
   record_digest: VersionedDigest,
 });
 const decodeRecordEnvelope = Schema.decodeUnknownEither(RecordContentEnvelope, STRICT);
 const decodeProvenanceStrict = Schema.decodeUnknownEither(Provenance, STRICT);
+
+const RecordPointerSchema = Schema.Struct({
+  collection_key: NonEmptyString,
+  identity_version: PositiveInt,
+  record_digest: VersionedDigest,
+});
+
+const AppliedPlanItemSummarySchema = Schema.Struct({
+  action: Schema.Literal(...BACKFILL_ACTIONS),
+  reason_code: Schema.Literal(...BACKFILL_REASON_CODES),
+  detail: Schema.String,
+  collection_key: Schema.optionalWith(NonEmptyString, { exact: true }),
+  affected_deployment_ids: Schema.Array(VersionedDigest),
+  evidence_refs: Schema.Array(Schema.String),
+  before_record_digest: Schema.optionalWith(VersionedDigest, { exact: true }),
+  after_record_digest: Schema.optionalWith(VersionedDigest, { exact: true }),
+});
+
+const EventBaseFields = {
+  schema_version: Schema.Literal(1),
+  sequence: PositiveInt,
+  occurred_at: NonEmptyString,
+  command_id: NonEmptyString,
+  command_digest: VersionedDigest,
+  prev_event_digest: Schema.optionalWith(VersionedDigest, { exact: true }),
+  event_digest: VersionedDigest,
+};
+
+const BackfillAppliedEventSchema = Schema.Struct({
+  ...EventBaseFields,
+  kind: Schema.Literal("backfill_applied"),
+  plan_digest: VersionedDigest,
+  base_state_digest: VersionedDigest,
+  registry_digest: VersionedDigest,
+  evidence_digest: VersionedDigest,
+  counts: Schema.Struct({
+    create: NonNegativeInt,
+    noop: NonNegativeInt,
+    update: NonNegativeInt,
+    quarantine: NonNegativeInt,
+    blocked: NonNegativeInt,
+  }),
+  created: Schema.Array(RecordContentEnvelope),
+  superseded: Schema.Array(RecordPointerSchema),
+  items: Schema.Array(AppliedPlanItemSummarySchema),
+});
+
+const BackfillRolledBackEventSchema = Schema.Struct({
+  ...EventBaseFields,
+  kind: Schema.Literal("backfill_rolled_back"),
+  through_sequence: NonNegativeInt,
+  reason: NonEmptyString,
+});
+
+const AuthorityEnabledEventSchema = Schema.Struct({
+  ...EventBaseFields,
+  kind: Schema.Literal("authority_enabled"),
+  parity_report_digest: VersionedDigest,
+  plan_digest: VersionedDigest,
+  state_digest: VersionedDigest,
+  registry_digest: VersionedDigest,
+});
+
+const IdentitySupersededEventSchema = Schema.Struct({
+  ...EventBaseFields,
+  kind: Schema.Literal("identity_superseded"),
+  contract_version: Schema.Literal(IDENTITY_SUPERSESSION_CONTRACT_VERSION),
+  cause: Schema.Literal("operator_revision", "equivalence_revocation"),
+  authority_ref: NonEmptyString,
+  reason: NonEmptyString,
+  affected_deployment_ids: Schema.Array(VersionedDigest),
+  superseded: Schema.Array(RecordPointerSchema),
+  successors: Schema.Array(RecordContentEnvelope),
+  revoked_equivalence_digests: Schema.Array(VersionedDigest),
+  impact: QuarantineImpactSetSchema,
+});
+
+const BackfillLedgerEventSchema = Schema.Union(
+  BackfillAppliedEventSchema,
+  BackfillRolledBackEventSchema,
+  AuthorityEnabledEventSchema,
+  IdentitySupersededEventSchema
+);
+const decodeBackfillLedgerEvent = Schema.decodeUnknownEither(
+  BackfillLedgerEventSchema,
+  STRICT
+);
+
+function decodeStoredEvent(input: unknown, where: string): BackfillLedgerEvent {
+  const decoded = decodeBackfillLedgerEvent(input);
+  if (Either.isLeft(decoded)) {
+    throw new BackfillIntegrityError(
+      `${where}: event envelope does not strict-decode — ${String(decoded.left)}`
+    );
+  }
+  return decoded.right;
+}
 
 /**
  * Re-verify one stored record content from untrusted bytes: strict envelope,
@@ -450,6 +560,12 @@ function verifyRecordContent(input: unknown, where: string): BackfillRecordConte
   if (Either.isLeft(identity)) {
     throw new BackfillIntegrityError(
       `${where}: stored identity fails CR-001 re-verification — ${String(identity.left)}`
+    );
+  }
+  if (identity.right.collection_key !== envelope.right.collection_key) {
+    throw new BackfillIntegrityError(
+      `${where}: embedded identity collection_key ${JSON.stringify(identity.right.collection_key)} ` +
+        `does not match record collection_key ${JSON.stringify(envelope.right.collection_key)}`
     );
   }
   const provenance = envelope.right.provenance.map((entry, index) => {
@@ -472,7 +588,7 @@ function verifyRecordContent(input: unknown, where: string): BackfillRecordConte
     proxy_implementations,
   };
   const recomputed = mintRecordDigest(content);
-  if (recomputed.digest !== envelope.right.record_digest.digest) {
+  if (!sameVersionedDigest(recomputed, envelope.right.record_digest)) {
     throw new BackfillIntegrityError(
       `${where}: record digest mismatch — stored ${envelope.right.record_digest.digest}, ` +
         `recomputed ${recomputed.digest}; refusing tampered record content`
@@ -514,12 +630,12 @@ function recordsOf(state: MaterializedState): readonly BackfillIdentityRecord[] 
   );
 }
 
-function eventDigestMaterial(event: Omit<BackfillLedgerEvent, "event_digest">): unknown {
+function eventDigestMaterial(event: unknown): unknown {
   // The event content IS the material; canonical encoding handles ordering.
   return event;
 }
 
-function mintEventDigest(event: Omit<BackfillLedgerEvent, "event_digest">): VersionedDigest {
+function mintEventDigest(event: unknown): VersionedDigest {
   return mintInventoryDigest(
     EVENT_DIGEST_DOMAIN,
     LEDGER_DIGEST_VERSION,
@@ -633,7 +749,7 @@ function stepState(
         );
       }
       const currentState = stateDigestOf(recordsOf(state));
-      if (currentState.digest !== event.base_state_digest.digest) {
+      if (!sameVersionedDigest(currentState, event.base_state_digest)) {
         throw new BackfillIntegrityError(
           `${where}: applied event binds base state ${event.base_state_digest.digest} but the ` +
             `materialized state is ${currentState.digest}`
@@ -646,7 +762,7 @@ function stepState(
       for (const pointer of event.superseded) {
         const key = recordKeyOf(pointer);
         const existing = state.records.get(key);
-        if (!existing || existing.record_digest.digest !== pointer.record_digest.digest) {
+        if (!existing || !sameVersionedDigest(existing.record_digest, pointer.record_digest)) {
           throw new BackfillIntegrityError(
             `${where}: superseded pointer ${key} does not match a stored record`
           );
@@ -692,7 +808,7 @@ function stepState(
         throw new BackfillAuthorityError(`${where}: authority is already enabled`);
       }
       const currentState = stateDigestOf(recordsOf(state));
-      if (currentState.digest !== event.state_digest.digest) {
+      if (!sameVersionedDigest(currentState, event.state_digest)) {
         throw new BackfillIntegrityError(
           `${where}: authority_enabled binds state ${event.state_digest.digest} but the ` +
             `materialized state is ${currentState.digest}`
@@ -720,7 +836,7 @@ function stepState(
       for (const pointer of event.superseded) {
         const key = recordKeyOf(pointer);
         const existing = state.records.get(key);
-        if (!existing || existing.record_digest.digest !== pointer.record_digest.digest) {
+        if (!existing || !sameVersionedDigest(existing.record_digest, pointer.record_digest)) {
           throw new BackfillIntegrityError(
             `${where}: superseded pointer ${key} does not match a stored record`
           );
@@ -847,7 +963,7 @@ function materialize(events: readonly BackfillLedgerEvent[]): BackfillLedger {
     } else {
       if (
         event.prev_event_digest === undefined ||
-        event.prev_event_digest.digest !== previousDigest!.digest
+        !sameVersionedDigest(event.prev_event_digest, previousDigest!)
       ) {
         throw new BackfillIntegrityError(
           `${where}: prev_event_digest does not chain to event ${index}`
@@ -855,8 +971,8 @@ function materialize(events: readonly BackfillLedgerEvent[]): BackfillLedger {
       }
     }
     const { event_digest, ...content } = event;
-    const recomputed = mintEventDigest(content as Omit<BackfillLedgerEvent, "event_digest">);
-    if (recomputed.digest !== event_digest.digest) {
+    const recomputed = mintEventDigest(content);
+    if (!sameVersionedDigest(recomputed, event_digest)) {
       throw new BackfillIntegrityError(
         `${where}: event digest mismatch — stored ${event_digest.digest}, recomputed ` +
           `${recomputed.digest}; refusing tampered event`
@@ -866,13 +982,6 @@ function materialize(events: readonly BackfillLedgerEvent[]): BackfillLedger {
     // Exact-command uniqueness on the chain: a command_id may appear once.
     // (Idempotent live retries never append a second event — they short-circuit
     // before appendEvent. A stored history with duplicates is tampering.)
-    if (
-      typeof event.command_digest !== "object" ||
-      event.command_digest === null ||
-      typeof (event.command_digest as VersionedDigest).digest !== "string"
-    ) {
-      throw new BackfillIntegrityError(`${where}: command_digest must be a VersionedDigest`);
-    }
     const prior = acceptedCommands.get(event.command_id);
     if (prior !== undefined) {
       throw new BackfillCommandConflictError(
@@ -927,25 +1036,38 @@ function beginMutation(
   if (options.command_id.length === 0) {
     throw new ValidationError("command_id", options.command_id, "a non-empty exact-command id");
   }
-  const prior = ledger.accepted_commands.find(
-    (entry) => entry.command_id === options.command_id
-  );
-  if (prior !== undefined) {
-    if (prior.command_digest.digest !== options.command_digest.digest) {
-      throw new BackfillCommandConflictError(
-        `command_id "${options.command_id}" was already accepted with a different payload ` +
-          `(prior digest ${prior.command_digest.digest}, retry digest ${options.command_digest.digest})`
-      );
-    }
+  if (resolveAcceptedCommand(ledger, options.command_id, options.command_digest)) {
     return { kind: "idempotent", ledger };
   }
-  if (options.expected_state_digest.digest !== ledger.state_digest.digest) {
+  if (!sameVersionedDigest(options.expected_state_digest, ledger.state_digest)) {
     throw new BackfillStalePlanError(
       `CAS refused: expected state ${options.expected_state_digest.digest} but ledger is at ` +
         `${ledger.state_digest.digest}`
     );
   }
   return { kind: "append", content: options.buildContent() };
+}
+
+/**
+ * Resolve an already-accepted exact command without touching live fold state.
+ * This must run before reconstructing event payloads: rollback can remove an
+ * accepted apply's records from the current materialized view while its
+ * immutable command receipt remains in the event history.
+ */
+function resolveAcceptedCommand(
+  ledger: BackfillLedger,
+  commandId: string,
+  commandDigest: VersionedDigest
+): boolean {
+  const prior = ledger.accepted_commands.find((entry) => entry.command_id === commandId);
+  if (prior === undefined) return false;
+  if (!sameVersionedDigest(prior.command_digest, commandDigest)) {
+    throw new BackfillCommandConflictError(
+      `command_id "${commandId}" was already accepted with a different payload ` +
+        `(prior digest ${prior.command_digest.digest}, retry digest ${commandDigest.digest})`
+    );
+  }
+  return true;
 }
 
 function mintCommandDigest(material: unknown): VersionedDigest {
@@ -956,10 +1078,13 @@ function appendEvent(
   ledger: BackfillLedger,
   content: Omit<BackfillLedgerEvent, "event_digest">
 ): BackfillLedger {
-  const event = deepFreeze({
-    ...content,
-    event_digest: mintEventDigest(content),
-  } as BackfillLedgerEvent);
+  const event = decodeStoredEvent(
+    {
+      ...content,
+      event_digest: mintEventDigest(content),
+    },
+    "new event"
+  );
   return materialize([...ledger.events, event]);
 }
 
@@ -979,7 +1104,9 @@ export function replayBackfillLedger(events: unknown): BackfillLedger {
   if (!Array.isArray(events)) {
     throw new ValidationError("events", events, "an array of backfill ledger events");
   }
-  return materialize(events as readonly BackfillLedgerEvent[]);
+  return materialize(
+    events.map((event, index) => decodeStoredEvent(event, `stored event ${index + 1}`))
+  );
 }
 
 /**
@@ -1052,16 +1179,40 @@ export function applyBackfillPlan(
   }
   const { plan_digest, ...header } = plan;
   const recomputed = mintPlanDigest(header);
-  if (recomputed.digest !== plan_digest.digest) {
+  if (!sameVersionedDigest(recomputed, plan_digest)) {
     throw new BackfillIntegrityError(
       `plan digest mismatch — stored ${plan_digest.digest}, recomputed ${recomputed.digest}; ` +
         `refusing tampered plan`
     );
   }
+  for (const [index, item] of plan.items.entries()) {
+    if (item.proposed !== undefined) {
+      verifyRecordContent(item.proposed, `plan item ${index + 1} proposal`);
+    }
+  }
 
-  // Reconstruct created/superseded from the plan + stored record digests (not
-  // "must be active") so an exact-command retry can rebuild the same payload
-  // after the first apply has already superseded those records.
+  const occurred_at = assertIsoUtcTimestamp(options.applied_at, "applied_at");
+  const command_digest = mintCommandDigest({
+    kind: "backfill_applied",
+    command_id: options.command_id,
+    occurred_at,
+    plan_digest: plan.plan_digest,
+    base_state_digest: plan.base_state_digest,
+    registry_digest: plan.registry_digest,
+    evidence_digest: plan.evidence_digest,
+    counts: plan.counts,
+    items: plan.items.map(stripProposal),
+  });
+
+  // The immutable command receipt is authoritative for exact retries. Resolve
+  // it before reading current materialized records: a later rollback may have
+  // legitimately removed the original apply's targets from the live view.
+  if (resolveAcceptedCommand(ledger, options.command_id, command_digest)) {
+    return ledger;
+  }
+
+  // For first acceptance, reconstruct created/superseded from the plan and
+  // stored record digests. Exact retries have already returned above.
   const created: BackfillRecordContent[] = [];
   const superseded: RecordPointer[] = [];
   for (const item of plan.items) {
@@ -1071,7 +1222,8 @@ export function applyBackfillPlan(
         const before = ledger.records.find(
           (record) =>
             record.collection_key === item.collection_key &&
-            record.record_digest.digest === item.before_record_digest?.digest
+            item.before_record_digest !== undefined &&
+            sameVersionedDigest(record.record_digest, item.before_record_digest)
         );
         if (!before) {
           throw new BackfillStalePlanError(
@@ -1087,20 +1239,8 @@ export function applyBackfillPlan(
     }
   }
 
-  const command_digest = mintCommandDigest({
-    kind: "backfill_applied",
-    command_id: options.command_id,
-    occurred_at: assertIsoUtcTimestamp(options.applied_at, "applied_at"),
-    plan_digest: plan.plan_digest,
-    base_state_digest: plan.base_state_digest,
-    registry_digest: plan.registry_digest,
-    evidence_digest: plan.evidence_digest,
-    counts: plan.counts,
-    items: plan.items.map(stripProposal),
-  });
-  // Exact-command idempotency BEFORE authority-state gating: a retry of an
-  // accepted pre-authority apply must replay after authority advances when
-  // (and only when) the canonical command is identical.
+  // The shared mutation gate now enforces CAS and rechecks command uniqueness
+  // before constructing the appendable event.
   const gate = beginMutation(ledger, {
     command_id: options.command_id,
     command_digest,
@@ -1109,7 +1249,7 @@ export function applyBackfillPlan(
       schema_version: 1 as const,
       kind: "backfill_applied" as const,
       sequence: ledger.events.length + 1,
-      occurred_at: assertIsoUtcTimestamp(options.applied_at, "applied_at"),
+      occurred_at,
       command_id: options.command_id,
       command_digest,
       ...(ledger.events.length > 0
@@ -1135,7 +1275,7 @@ export function applyBackfillPlan(
 
   // First acceptance: plan must bind the live state, and update targets must
   // still be the ACTIVE versions (fold enforces this too).
-  if (plan.base_state_digest.digest !== ledger.state_digest.digest) {
+  if (!sameVersionedDigest(plan.base_state_digest, ledger.state_digest)) {
     throw new BackfillStalePlanError(
       `plan was computed against state ${plan.base_state_digest.digest} but the ledger is at ` +
         `${ledger.state_digest.digest}; re-run planIdentityBackfill against the current ledger`
@@ -1289,7 +1429,7 @@ export function enableAuthority(
   const occurred_at = assertIsoUtcTimestamp(options.enabled_at, "enabled_at");
   const { clean_plan } = options;
   const { plan_digest, ...header } = clean_plan;
-  if (mintPlanDigest(header).digest !== plan_digest.digest) {
+  if (!sameVersionedDigest(mintPlanDigest(header), plan_digest)) {
     throw new BackfillIntegrityError("clean plan digest mismatch; refusing tampered plan");
   }
 
@@ -1309,7 +1449,7 @@ export function enableAuthority(
     (entry) => entry.command_id === options.command_id
   );
   if (prior !== undefined) {
-    if (prior.command_digest.digest !== command_digest.digest) {
+    if (!sameVersionedDigest(prior.command_digest, command_digest)) {
       throw new BackfillCommandConflictError(
         `command_id "${options.command_id}" was already accepted with a different payload ` +
           `(prior digest ${prior.command_digest.digest}, retry digest ${command_digest.digest})`
@@ -1363,18 +1503,18 @@ export function enableAuthority(
   }
 
   const registryDigest = registrySnapshotDigestOf(options.registry);
-  if (registryDigest.digest !== clean_plan.registry_digest.digest) {
+  if (!sameVersionedDigest(registryDigest, clean_plan.registry_digest)) {
     throw new BackfillParityError(
       "enablement registry snapshot does not match the clean plan's registry digest"
     );
   }
-  if (parity.registry_digest.digest !== registryDigest.digest) {
+  if (!sameVersionedDigest(parity.registry_digest, registryDigest)) {
     throw new BackfillParityError(
       "recomputed parity proof is bound to a different registry snapshot than enablement"
     );
   }
 
-  if (options.expected_state_digest.digest !== ledger.state_digest.digest) {
+  if (!sameVersionedDigest(options.expected_state_digest, ledger.state_digest)) {
     throw new BackfillStalePlanError(
       `CAS refused: expected state ${options.expected_state_digest.digest} but ledger is at ` +
         `${ledger.state_digest.digest}`
@@ -1383,23 +1523,23 @@ export function enableAuthority(
   if (ledger.authority !== "pre_authority") {
     throw new BackfillAuthorityError("authority is already enabled");
   }
-  if (parity.state_digest.digest !== ledger.state_digest.digest) {
+  if (!sameVersionedDigest(parity.state_digest, ledger.state_digest)) {
     throw new BackfillParityError(
       `read-parity proof is bound to state ${parity.state_digest.digest} but the ledger is at ` +
         `${ledger.state_digest.digest}; re-prove parity against the current state`
     );
   }
-  if (parity.registry_digest.digest !== clean_plan.registry_digest.digest) {
+  if (!sameVersionedDigest(parity.registry_digest, clean_plan.registry_digest)) {
     throw new BackfillParityError(
       "parity proof and clean plan were computed against different registry snapshots"
     );
   }
-  if (clean_plan.base_state_digest.digest !== ledger.state_digest.digest) {
+  if (!sameVersionedDigest(clean_plan.base_state_digest, ledger.state_digest)) {
     throw new BackfillParityError(
       "clean plan is not bound to the ledger's current state; re-plan and re-prove"
     );
   }
-  if (clean_plan.registry_digest.digest !== parity.registry_digest.digest) {
+  if (!sameVersionedDigest(clean_plan.registry_digest, parity.registry_digest)) {
     throw new BackfillParityError(
       "clean plan and parity proof were computed against different registry snapshots"
     );
@@ -1496,7 +1636,7 @@ export function applyOperatorRevision(
     (entry) => entry.command_id === options.command_id
   );
   if (prior !== undefined) {
-    if (prior.command_digest.digest !== command_digest.digest) {
+    if (!sameVersionedDigest(prior.command_digest, command_digest)) {
       throw new BackfillCommandConflictError(
         `command_id "${options.command_id}" was already accepted with a different payload ` +
           `(prior digest ${prior.command_digest.digest}, retry digest ${command_digest.digest})`
@@ -1516,7 +1656,7 @@ export function applyOperatorRevision(
         `of reachable work-row/artifact refs`,
     };
   }
-  if (options.expected_state_digest.digest !== ledger.state_digest.digest) {
+  if (!sameVersionedDigest(options.expected_state_digest, ledger.state_digest)) {
     throw new BackfillStalePlanError(
       `CAS refused: expected state ${options.expected_state_digest.digest} but ledger is at ` +
         `${ledger.state_digest.digest}`
@@ -1593,7 +1733,7 @@ export function applyOperatorRevision(
       );
     }
     const rowIdentity = mintRegistryRowIdentity(entry);
-    if (rowIdentity.identity.collection_id.digest !== record.identity.collection_id.digest) {
+    if (!sameVersionedDigest(rowIdentity.identity.collection_id, record.identity.collection_id)) {
       throw new BackfillRevocationError(
         `active identity "${record.collection_key}" v${record.identity_version} disagrees with ` +
           `the current registry row; reconcile curation before revising equivalence`
@@ -1812,7 +1952,7 @@ export function revokeEquivalence(
     (entry) => entry.command_id === request.command_id
   );
   if (prior !== undefined) {
-    if (prior.command_digest.digest !== command_digest.digest) {
+    if (!sameVersionedDigest(prior.command_digest, command_digest)) {
       throw new BackfillCommandConflictError(
         `command_id "${request.command_id}" was already accepted with a different payload ` +
           `(prior digest ${prior.command_digest.digest}, retry digest ${command_digest.digest})`
@@ -1831,7 +1971,7 @@ export function revokeEquivalence(
         `discovery_complete:true with the explicit complete set of reachable work-row/artifact refs`,
     };
   }
-  if (request.expected_state_digest.digest !== ledger.state_digest.digest) {
+  if (!sameVersionedDigest(request.expected_state_digest, ledger.state_digest)) {
     throw new BackfillStalePlanError(
       `CAS refused: expected state ${request.expected_state_digest.digest} but ledger is at ` +
         `${ledger.state_digest.digest}`
@@ -1849,7 +1989,7 @@ export function revokeEquivalence(
       record.collection_key === request.revoked.collection_key &&
       record.identity_version === request.revoked.identity_version
   );
-  if (!target || target.record_digest.digest !== request.revoked.record_digest.digest) {
+  if (!target || !sameVersionedDigest(target.record_digest, request.revoked.record_digest)) {
     throw new BackfillRevocationError(
       `revocation target ${recordKeyOf(request.revoked)} does not match a stored record`
     );
@@ -2029,7 +2169,7 @@ export function resolveBackfilledIdentity(
     (candidate) =>
       candidate.status === "active" &&
       candidate.identity.deployments.some(
-        (deployment) => deployment.deployment_id.digest === query.deployment_id.digest
+        (deployment) => sameVersionedDigest(deployment.deployment_id, query.deployment_id)
       )
   );
   return record ? { found: true, record } : { found: false };
@@ -2103,7 +2243,7 @@ export function mintSharedWorkKey(request: SharedWorkKeyRequest): VersionedDiges
       `a CR-001-assemblable identity — ${String(reassembled.left)}`
     );
   }
-  if (reassembled.right.collection_id.digest !== identity.collection_id.digest) {
+  if (!sameVersionedDigest(reassembled.right.collection_id, identity.collection_id)) {
     throw new ValidationError(
       "identity.collection_id",
       identity.collection_id,

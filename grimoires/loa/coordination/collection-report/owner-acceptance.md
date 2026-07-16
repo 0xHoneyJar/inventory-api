@@ -3,9 +3,13 @@
 **Dispatch:** `ACCEPT-INVENTORY` (`collection-report-coordinator-f09.52`)
 **Owner boundary:** `inventory-api`
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
-**Coordinator source root:** `/Users/zksoju/bonfire/collection-report-coordinator/grimoires/loa`
-**Coordinator artifacts:** PRD v0.3, SDD, Sprint Plan v0.6
+**Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
+**Coordinator artifacts:** PRD v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), SDD v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), Sprint Plan v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`)
+**Document version:** `1.0`
+**Accepted by:** Inventory boundary owner role under the `ACCEPT-INVENTORY` dispatch (technical acceptance only)
+**Acceptance recorded at:** `2026-07-16T01:36:54-07:00`
 **Verdict:** `conditional`
+**Supersession:** Only a later, dispatch-referenced revision of this file carrying a new document version, acceptance record, and source snapshots may change this verdict.
 
 ## Call
 
@@ -23,6 +27,29 @@ rights-aware cross-VM registry and bounded metadata resolution, but its public
 alias-addressable. It does not accept a shared `CollectionDeploymentRef`, emit
 metadata provenance, publish explicit equivalence evidence, or provide a
 production backfill/reconciliation path.
+
+This record is a point-in-time technical acceptance, not human or operator
+approval and not a production GO. Re-audit the facts below against the then-current
+Inventory baseline before CR-105 becomes issue-ready, before G2A, before G2B,
+and whenever a file cited under **Evidence** changes from the pinned audited
+baseline. A re-audit must record its new baseline and superseding document
+version; until then, the findings apply only to the baseline named above and
+must not be projected onto a newer `main`.
+
+## Identifier glossary
+
+| Identifier | Meaning in this acceptance | Coordinator sprint anchor |
+|---|---|---|
+| G0 | Cross-VM deployment identity fixtures pass in every consumer. | Sprint §4, §6 |
+| G2A | Resolver and enrichment fixtures prove honest single, multiple, partial, and empty outcomes for the initial EVM-plus-Solana matrix. | Sprint §4, §7 |
+| G2B | Production identity backfill/parity and every additional enabled network's recognition packet pass. | Sprint §4, §7 |
+| CR-001 | Shared cross-VM collection identity contract and fixtures. | Sprint §6 |
+| CR-105 | Exact Inventory enrichment contract. | Sprint §7 |
+| CR-108 | Existing collection identity and equivalence backfill. | Sprint §7 |
+| CR-209A | Mixed-version rollout and cutover plan. | Sprint §8 |
+| CR-209B | Production cutover rehearsal. | Sprint §8 |
+| CR-404 | Capacity dashboard and operations runbook. | Sprint §10 |
+| CR-405 | Optional metadata snapshot capability. | Sprint §10 |
 
 ## Current `origin/main` audit
 
@@ -147,6 +174,10 @@ persistent service is introduced solely for CR-105.
 | CR-108 versioning, parity/collision, rollback, revocation publication | 7-11 engineer-days | Inventory maintainer plus shared-protocol/Ordering participant |
 | Production rehearsal, reconciliation, dashboards, handoff | 4-7 engineer-days | Inventory maintainer plus Operations; Ordering/Sonar at gates |
 
+Each row's effort range is Inventory-owner engineer time. The peer roles named
+under Staffing identify coordination needs; their review and integration effort
+is counted only in the separate participant range below.
+
 **Total:** 27-42 engineer-days, plus 5-9 participant review/integration days.
 Minimum viable staffing is one dedicated Inventory maintainer, approximately
 0.5 shared across Sonar/Ordering/shared-protocol, and approximately 0.2
@@ -217,6 +248,19 @@ shutdown, reverse-dependency enumeration, work/artifact quarantine, and accepted
 order truth. Storage owns mirrored bytes, retention, and pointer flips. CR-404's
 report-wide capacity dashboard remains the operations owner's surface; Inventory
 must export its boundary metrics into it but must not redefine report lifecycle.
+
+Those peer duties are acknowledged only through conditional technical owner
+acceptances: Sonar `ACCEPT-SONAR` / `collection-report-coordinator-f09.40`
+([PR #163](https://github.com/0xHoneyJar/sonar-api/pull/163) at
+`87487d1d268b7299c7bd880cc8e328ad2e6e861f`), Storage `ACCEPT-STORAGE` /
+`collection-report-coordinator-f09.55`
+([PR #28](https://github.com/0xHoneyJar/storage-api/pull/28) at
+`37c1c23e9fc5dc73025c4d37b91187829554047c`), and Loa/Ordering `ACCEPT-LOA` /
+`collection-report-coordinator-f09.9`
+([PR #473](https://github.com/0xHoneyJar/loa-freeside/pull/473) at
+`9c22936c062b6491a50aeac4837d73f50ae0159a`). These references do not imply
+human approval, production readiness, or closure of any referenced document's
+conditions.
 
 Required runbook procedures:
 

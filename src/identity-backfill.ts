@@ -342,6 +342,26 @@ export function mintOperatorAssertionDigest(assertion: {
   );
 }
 
+/**
+ * Evidence-batch material for one decoded operator assertion. The assertion
+ * digest deliberately names only the equivalence edge; this audit envelope
+ * additionally binds when and from which evidence record that edge was
+ * approved. Raw schema/optional-digest transport representation is excluded.
+ */
+function operatorAssertionEvidenceMaterial(assertion: OperatorEquivalenceAssertion) {
+  return {
+    source: "operator_ratified",
+    authority_ref: assertion.authority_ref,
+    canonical_collection_key: assertion.canonical_collection_key,
+    deployment_ids: sortDigests(
+      assertion.deployments.map((deployment) => deployment.deployment_id)
+    ),
+    approved_at: assertion.approved_at,
+    source_reference: assertion.source_reference,
+    assertion_digest: assertion.assertion_digest,
+  };
+}
+
 const OperatorAssertionWireSchema = Schema.Struct({
   schema_version: Schema.optionalWith(Schema.Literal(1), { exact: true }),
   authority_ref: NonEmptyString,
@@ -537,7 +557,7 @@ export function decodeBackfillEvidence(input: unknown): BackfillEvidence {
         observed_at: evidence.observed_at,
         source_reference: evidence.source_reference,
       })),
-      operator_assertions: assertions.map((assertion) => assertion.assertion_digest),
+      operator_assertions: assertions.map(operatorAssertionEvidenceMaterial),
     }
   );
 

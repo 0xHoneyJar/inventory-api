@@ -471,6 +471,98 @@ describe("CR-108 planner: EVM / Solana / quarantine / blocked", () => {
     ).toBe(true);
   });
 
+  it("operator evidence digest binds approval audit fields and replays deterministically", () => {
+    const registry = subsetRegistry("mibera");
+    const ref = registryDeploymentRefsOf(registry[0]!)[0]!;
+    const evidenceInput = {
+      schema_version: 1,
+      observations: [],
+      proxy_implementations: [],
+      operator_assertions: [
+        {
+          schema_version: 1,
+          authority_ref: "operator:evidence-audit/001",
+          canonical_collection_key: "mibera",
+          deployments: [ref],
+          approved_at: TS,
+          source_reference: "operator:evidence-audit/source-a",
+        },
+      ],
+    };
+    const evidence = decodeBackfillEvidence(evidenceInput);
+    const exactEvidence = decodeBackfillEvidence(evidenceInput);
+    const changedApproval = decodeBackfillEvidence({
+      ...evidenceInput,
+      operator_assertions: [
+        {
+          ...evidenceInput.operator_assertions[0]!,
+          approved_at: "2026-07-16T01:00:00.000Z",
+        },
+      ],
+    });
+    const changedSource = decodeBackfillEvidence({
+      ...evidenceInput,
+      operator_assertions: [
+        {
+          ...evidenceInput.operator_assertions[0]!,
+          source_reference: "operator:evidence-audit/source-b",
+        },
+      ],
+    });
+
+    expect(exactEvidence.evidence_digest.digest).toBe(evidence.evidence_digest.digest);
+    expect(changedApproval.evidence_digest.digest).not.toBe(evidence.evidence_digest.digest);
+    expect(changedSource.evidence_digest.digest).not.toBe(evidence.evidence_digest.digest);
+    expect(changedApproval.operator_assertions[0]!.assertion_digest.digest).toBe(
+      evidence.operator_assertions[0]!.assertion_digest.digest
+    );
+    expect(changedSource.operator_assertions[0]!.assertion_digest.digest).toBe(
+      evidence.operator_assertions[0]!.assertion_digest.digest
+    );
+
+    const plan = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence,
+      registry_observed_at: TS,
+    });
+    const exactPlan = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence: exactEvidence,
+      registry_observed_at: TS,
+    });
+    const changedSourcePlan = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence: changedSource,
+      registry_observed_at: TS,
+    });
+    expect(exactPlan.plan_digest.digest).toBe(plan.plan_digest.digest);
+    expect(changedSourcePlan.plan_digest.digest).not.toBe(plan.plan_digest.digest);
+
+    let ledger = createBackfillLedger();
+    const command = {
+      applied_at: TS,
+      command_id: "cmd:evidence-audit-replay",
+      expected_state_digest: ledger.state_digest,
+    };
+    ledger = applyBackfillPlan(ledger, plan, command);
+    const eventCount = ledger.events.length;
+    const replayed = applyBackfillPlan(ledger, exactPlan, {
+      ...command,
+      expected_state_digest: ledger.state_digest,
+    });
+    expect(replayed.events.length).toBe(eventCount);
+    expect(replayed.state_digest.digest).toBe(ledger.state_digest.digest);
+    expect(() =>
+      applyBackfillPlan(ledger, changedSourcePlan, {
+        ...command,
+        expected_state_digest: ledger.state_digest,
+      })
+    ).toThrow(BackfillCommandConflictError);
+  });
+
   it("missing network identity and uncurated observation quarantine", () => {
     const registry = subsetRegistry("mibera");
     const foreign = mintRef(evmInput(1, "0x1111111111111111111111111111111111111111"));

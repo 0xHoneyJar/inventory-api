@@ -41,6 +41,7 @@ import {
   mintOperatorAssertionDigest,
   decodeOperatorEquivalenceAssertion,
   mintInventoryDigest,
+  mintPlanDigest,
   type BackfillEvidence,
 } from "../src/identity-backfill.js";
 import {
@@ -926,6 +927,121 @@ describe("CR-108 ledger: apply / rollback / CAS / command idempotency", () => {
       /embedded identity collection_key/
     );
   });
+
+  it("replay rejects digest-valid count and item narratives that disagree with records", () => {
+    const { ledger } = applyClean(
+      createBackfillLedger(),
+      subsetRegistry("mibera"),
+      emptyEvidence(),
+      "cmd:audit-triangle"
+    );
+    const event = ledger.events[0]!;
+    if (event.kind !== "backfill_applied") {
+      throw new Error("expected first event to be a backfill apply");
+    }
+    const { event_digest: storedEventDigest, ...content } = event;
+    void storedEventDigest;
+
+    const dishonestCountsContent = {
+      ...content,
+      counts: { ...event.counts, create: 0 },
+    };
+    const dishonestCounts = {
+      ...dishonestCountsContent,
+      event_digest: mintInventoryDigest(
+        "inventory.backfill-event",
+        1,
+        dishonestCountsContent
+      ),
+    };
+    expect(() => replayBackfillLedger([dishonestCounts])).toThrow(
+      /counts\.create/
+    );
+
+    const omittedItemsContent = {
+      ...content,
+      counts: { create: 0, noop: 0, update: 0, quarantine: 0, blocked: 0 },
+      items: [],
+    };
+    const omittedItems = {
+      ...omittedItemsContent,
+      event_digest: mintInventoryDigest(
+        "inventory.backfill-event",
+        1,
+        omittedItemsContent
+      ),
+    };
+    expect(() => replayBackfillLedger([omittedItems])).toThrow(
+      /do not correspond exactly to created records/
+    );
+  });
+
+  it("replay rejects malformed stored proxy timestamps even with reminted digests", () => {
+    const registry = subsetRegistry("mibera");
+    const proxy = registryDeploymentRefsOf(registry[0]!)[0]!;
+    const implementation = mintRef(
+      evmInput(MIBERA_CHAIN_ID, FRACTURED_ADDRESSES[0]!)
+    );
+    const evidence = decodeBackfillEvidence({
+      schema_version: 1,
+      observations: [],
+      proxy_implementations: [
+        {
+          schema_version: 1,
+          proxy,
+          implementation,
+          proxy_standard: "eip1967",
+          observed_at: TS,
+          source_reference: "onchain:stored-proxy",
+        },
+      ],
+      operator_assertions: [],
+    });
+    const { ledger } = applyClean(
+      createBackfillLedger(),
+      registry,
+      evidence,
+      "cmd:stored-proxy"
+    );
+    const event = ledger.events[0]!;
+    if (event.kind !== "backfill_applied") {
+      throw new Error("expected first event to be a backfill apply");
+    }
+    const record = event.created[0]!;
+    const binding = record.proxy_implementations[0]!;
+    const { record_digest: storedRecordDigest, ...recordContent } = record;
+    void storedRecordDigest;
+    const malformedRecordContent = {
+      ...recordContent,
+      proxy_implementations: [{ ...binding, observed_at: "not-a-timestamp" }],
+    };
+    const malformedRecord = {
+      ...malformedRecordContent,
+      record_digest: mintRecordDigest(malformedRecordContent),
+    };
+    const { event_digest: storedEventDigest, ...eventContent } = event;
+    void storedEventDigest;
+    const malformedEventContent = {
+      ...eventContent,
+      created: [malformedRecord],
+      items: event.items.map((item) =>
+        item.action === "create"
+          ? { ...item, after_record_digest: malformedRecord.record_digest }
+          : item
+      ),
+    };
+    const malformedEvent = {
+      ...malformedEventContent,
+      event_digest: mintInventoryDigest(
+        "inventory.backfill-event",
+        1,
+        malformedEventContent
+      ),
+    };
+    expect(() => replayBackfillLedger([malformedEvent])).toThrow(
+      /proxy_implementations\[0\]\.observed_at/
+    );
+  });
 });
 
 describe("CR-108 parity + authority", () => {
@@ -1101,6 +1217,43 @@ describe("CR-108 parity + authority", () => {
         expected_state_digest: dirtyLedger.state_digest,
       })
     ).toThrow(BackfillParityError);
+  });
+
+  it("recomputes clean-plan counts from items before authority enablement", () => {
+    const registry = subsetRegistry("mibera");
+    const { ledger: applied } = applyClean(
+      createBackfillLedger(),
+      registry,
+      emptyEvidence(),
+      "cmd:count-gate-apply"
+    );
+    const clean = planIdentityBackfill({
+      registry,
+      current_records: applied.records,
+      evidence: emptyEvidence(),
+      registry_observed_at: TS,
+    });
+    const first = clean.items[0]!;
+    const { plan_digest: storedPlanDigest, ...cleanHeader } = clean;
+    void storedPlanDigest;
+    const dishonestHeader = {
+      ...cleanHeader,
+      items: [{ ...first, action: "quarantine" as const }, ...clean.items.slice(1)],
+    };
+    const dishonestPlan = {
+      ...dishonestHeader,
+      plan_digest: mintPlanDigest(dishonestHeader),
+    };
+
+    expect(() =>
+      enableAuthority(applied, {
+        registry,
+        clean_plan: dishonestPlan,
+        enabled_at: TS,
+        command_id: "cmd:count-gate-enable",
+        expected_state_digest: applied.state_digest,
+      })
+    ).toThrow(BackfillIntegrityError);
   });
 });
 
@@ -1343,6 +1496,24 @@ describe("CR-108 post-authority revision / revocation / impact", () => {
         coverage: "explicit_references_only",
         enumeration_ref: "walk:1",
         work_rows: [],
+        issued_artifacts: [],
+      })
+    ).toThrow(ValidationError);
+
+    expect(() =>
+      decodeQuarantineImpactSet({
+        schema_version: 1,
+        coverage: "explicit_references_only",
+        enumeration_ref: "walk:wrong-work-domain",
+        discovery_complete: true,
+        work_rows: [
+          {
+            work_key: mintInventoryDigest("inventory.not-a-work-key", 1, {
+              row: 1,
+            }),
+            reference: "ordering:row/1",
+          },
+        ],
         issued_artifacts: [],
       })
     ).toThrow(ValidationError);

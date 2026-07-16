@@ -382,8 +382,16 @@ const PositiveInt = Schema.Number.pipe(Schema.int(), Schema.positive());
 const Integer = Schema.Number.pipe(Schema.int());
 const NonNegativeInt = Integer.pipe(Schema.nonNegative());
 
+const CollectionWorkKeyDigest = VersionedDigest.pipe(
+  Schema.filter(
+    (value) =>
+      (value.domain === "collection.work-key" && value.major_version === 1) ||
+      "work_key must use the collection.work-key v1 digest domain"
+  )
+);
+
 const WorkRowReferenceSchema = Schema.Struct({
-  work_key: VersionedDigest,
+  work_key: CollectionWorkKeyDigest,
   reference: NonEmptyString,
 });
 
@@ -578,7 +586,25 @@ function verifyRecordContent(input: unknown, where: string): BackfillRecordConte
     return decoded.right;
   });
   const proxy_implementations: readonly RecordedProxyImplementation[] =
-    envelope.right.proxy_implementations;
+    envelope.right.proxy_implementations.map((binding, index) => {
+      try {
+        return {
+          ...binding,
+          observed_at: assertIsoUtcTimestamp(
+            binding.observed_at,
+            `${where}.proxy_implementations[${index}].observed_at`
+          ),
+        };
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          throw new BackfillIntegrityError(
+            `${where}: proxy_implementations[${index}].observed_at must be a UTC ` +
+              `ISO-8601 timestamp with Z suffix`
+          );
+        }
+        throw error;
+      }
+    });
   const content: Omit<BackfillRecordContent, "record_digest"> = {
     schema_version: 1,
     collection_key: envelope.right.collection_key,
@@ -595,6 +621,89 @@ function verifyRecordContent(input: unknown, where: string): BackfillRecordConte
     );
   }
   return { ...content, record_digest: recomputed };
+}
+
+function actionCountsOf(
+  items: readonly Pick<AppliedPlanItemSummary, "action">[]
+): Record<BackfillAction, number> {
+  const counts: Record<BackfillAction, number> = {
+    create: 0,
+    noop: 0,
+    update: 0,
+    quarantine: 0,
+    blocked: 0,
+  };
+  for (const item of items) counts[item.action] += 1;
+  return counts;
+}
+
+function verifyActionCounts(
+  counts: Readonly<Record<BackfillAction, number>>,
+  items: readonly Pick<AppliedPlanItemSummary, "action">[],
+  where: string
+): void {
+  const recomputed = actionCountsOf(items);
+  for (const action of BACKFILL_ACTIONS) {
+    if (counts[action] !== recomputed[action]) {
+      throw new BackfillIntegrityError(
+        `${where}: counts.${action} is ${counts[action]} but items contain ` +
+          `${recomputed[action]} ${action} action(s)`
+      );
+    }
+  }
+}
+
+function recordAuditKey(collectionKey: string, digest: VersionedDigest): string {
+  return `${collectionKey}:${versionedDigestKeyOf(digest)}`;
+}
+
+function verifyAppliedEventAudit(
+  event: BackfillAppliedEvent,
+  created: readonly BackfillRecordContent[],
+  where: string
+): void {
+  verifyActionCounts(event.counts, event.items, where);
+
+  const expectedCreated = event.items
+    .filter((item) => item.action === "create" || item.action === "update")
+    .map((item, index) => {
+      if (item.collection_key === undefined || item.after_record_digest === undefined) {
+        throw new BackfillIntegrityError(
+          `${where}: items[${index}] ${item.action} action must name collection_key and ` +
+            `after_record_digest`
+        );
+      }
+      return recordAuditKey(item.collection_key, item.after_record_digest);
+    })
+    .sort(compareStrings);
+  const actualCreated = created
+    .map((record) => recordAuditKey(record.collection_key, record.record_digest))
+    .sort(compareStrings);
+  if (JSON.stringify(expectedCreated) !== JSON.stringify(actualCreated)) {
+    throw new BackfillIntegrityError(
+      `${where}: create/update items do not correspond exactly to created records`
+    );
+  }
+
+  const expectedSuperseded = event.items
+    .filter((item) => item.action === "update")
+    .map((item, index) => {
+      if (item.collection_key === undefined || item.before_record_digest === undefined) {
+        throw new BackfillIntegrityError(
+          `${where}: update items[${index}] must name collection_key and before_record_digest`
+        );
+      }
+      return recordAuditKey(item.collection_key, item.before_record_digest);
+    })
+    .sort(compareStrings);
+  const actualSuperseded = event.superseded
+    .map((pointer) => recordAuditKey(pointer.collection_key, pointer.record_digest))
+    .sort(compareStrings);
+  if (JSON.stringify(expectedSuperseded) !== JSON.stringify(actualSuperseded)) {
+    throw new BackfillIntegrityError(
+      `${where}: update items do not correspond exactly to superseded records`
+    );
+  }
 }
 
 // ── The fold (single implementation for live mutation AND replay) ───────────
@@ -758,6 +867,7 @@ function stepState(
       const created = event.created.map((content, index) =>
         verifyRecordContent(content, `${where}: created[${index}]`)
       );
+      verifyAppliedEventAudit(event, created, where);
       const supersededKeys = new Set<string>();
       for (const pointer of event.superseded) {
         const key = recordKeyOf(pointer);
@@ -1185,6 +1295,7 @@ export function applyBackfillPlan(
         `refusing tampered plan`
     );
   }
+  verifyActionCounts(plan.counts, plan.items, "plan");
   for (const [index, item] of plan.items.entries()) {
     if (item.proposed !== undefined) {
       verifyRecordContent(item.proposed, `plan item ${index + 1} proposal`);
@@ -1432,6 +1543,7 @@ export function enableAuthority(
   if (!sameVersionedDigest(mintPlanDigest(header), plan_digest)) {
     throw new BackfillIntegrityError("clean plan digest mismatch; refusing tampered plan");
   }
+  verifyActionCounts(clean_plan.counts, clean_plan.items, "clean plan");
 
   // Command identity is the submitted request payload — not the live-recomputed
   // parity report (that is an enablement OUTPUT bound on the event). Including
@@ -1494,9 +1606,12 @@ export function enableAuthority(
       "read-parity proof checked zero deployments; an empty proof proves nothing"
     );
   }
-  if (clean_plan.counts.quarantine !== 0) {
+  const quarantinedItems = clean_plan.items.filter(
+    (item) => item.action === "quarantine"
+  ).length;
+  if (quarantinedItems !== 0) {
     throw new BackfillParityError(
-      `plan holds ${clean_plan.counts.quarantine} quarantined item(s); conflicts, ambiguous ` +
+      `plan holds ${quarantinedItems} quarantined item(s); conflicts, ambiguous ` +
         `grouping, missing network identity, and code/proxy changes must be resolved before ` +
         `new-key authority`
     );

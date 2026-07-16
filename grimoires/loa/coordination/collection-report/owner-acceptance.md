@@ -7,9 +7,10 @@
 **Coordinator artifacts:** PRD v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), SDD v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), Sprint Plan v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`)
 **Document version:** `1.0`
 **Accepted by:** Inventory boundary owner role under the `ACCEPT-INVENTORY` dispatch (technical acceptance only)
+**Recorded by:** `@zkSoju`, as the dispatch operator and PR author; this records provenance, not human production approval. A role rotation may replace the recorder only through a later dispatch-referenced acceptance record.
 **Acceptance recorded at:** `2026-07-16T01:36:54-07:00`
 **Verdict:** `conditional`
-**Supersession:** Only a later, dispatch-referenced revision of this file carrying a new document version, acceptance record, and source snapshots may change this verdict.
+**Supersession:** Only a later, dispatch-referenced revision of this file carrying a new document version, acceptance record, and source snapshots may replace this verdict. Evidence invalidation, a failed required re-audit, or withdrawal of a bound coordinator artifact immediately makes this record `stale / blocked` pending supersession; absence of a replacement never preserves usability.
 
 ## Call
 

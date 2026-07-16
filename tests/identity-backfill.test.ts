@@ -80,6 +80,12 @@ import {
 import { ValidationError } from "../src/errors.js";
 
 const TS = "2026-07-16T00:00:00.000Z";
+const EMPTY_EVIDENCE_INPUT = Object.freeze({
+  schema_version: 1 as const,
+  observations: Object.freeze([]),
+  proxy_implementations: Object.freeze([]),
+  operator_assertions: Object.freeze([]),
+});
 
 function acceptMutation(result: PostAuthorityMutationResult): BackfillLedger {
   expect(result.status).toBe("accepted");
@@ -118,12 +124,7 @@ function mintRef(input: unknown): CollectionDeploymentRef {
 }
 
 function emptyEvidence(): BackfillEvidence {
-  return decodeBackfillEvidence({
-    schema_version: 1,
-    observations: [],
-    proxy_implementations: [],
-    operator_assertions: [],
-  });
+  return decodeBackfillEvidence(EMPTY_EVIDENCE_INPUT);
 }
 
 function subsetRegistry(...keys: string[]): CollectionRegistryEntry[] {
@@ -1071,6 +1072,7 @@ describe("CR-108 parity + authority", () => {
       registry,
       expected_parity: parity,
       clean_plan: clean,
+      evidence_input: EMPTY_EVIDENCE_INPUT,
       enabled_at: TS,
       command_id: "cmd:enable",
       expected_state_digest: ledger.state_digest,
@@ -1105,6 +1107,7 @@ describe("CR-108 parity + authority", () => {
       enableAuthority(empty, {
         registry,
         clean_plan: emptyPlan,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
         enabled_at: TS,
         command_id: "cmd:enable-empty",
         expected_state_digest: empty.state_digest,
@@ -1129,6 +1132,7 @@ describe("CR-108 parity + authority", () => {
         registry,
         expected_parity: forgedFromElsewhere,
         clean_plan: emptyPlan,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
         enabled_at: TS,
         command_id: "cmd:enable-empty-forge",
         expected_state_digest: empty.state_digest,
@@ -1165,13 +1169,14 @@ describe("CR-108 parity + authority", () => {
         registry,
         expected_parity: parity,
         clean_plan: clean,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
         enabled_at: TS,
         command_id: "cmd:enable-fail",
         expected_state_digest: ledger.state_digest,
       })
     ).toThrow(BackfillParityError);
 
-    const conflictEvidence = decodeBackfillEvidence({
+    const conflictEvidenceInput = {
       schema_version: 1,
       observations: [
         {
@@ -1185,7 +1190,8 @@ describe("CR-108 parity + authority", () => {
       ],
       proxy_implementations: [],
       operator_assertions: [],
-    });
+    } as const;
+    const conflictEvidence = decodeBackfillEvidence(conflictEvidenceInput);
     // Fresh ledger for quarantine gate (applied state already has identity).
     let dirtyLedger = createBackfillLedger();
     const dirtyPlan = planIdentityBackfill({
@@ -1212,6 +1218,7 @@ describe("CR-108 parity + authority", () => {
       enableAuthority(dirtyLedger, {
         registry,
         clean_plan: stillDirty,
+        evidence_input: conflictEvidenceInput,
         enabled_at: TS,
         command_id: "cmd:enable-quarantine",
         expected_state_digest: dirtyLedger.state_digest,
@@ -1249,11 +1256,32 @@ describe("CR-108 parity + authority", () => {
       enableAuthority(applied, {
         registry,
         clean_plan: dishonestPlan,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
         enabled_at: TS,
         command_id: "cmd:count-gate-enable",
         expected_state_digest: applied.state_digest,
       })
     ).toThrow(BackfillIntegrityError);
+
+    const emptyHeader = {
+      ...cleanHeader,
+      items: [],
+      counts: { create: 0, noop: 0, update: 0, quarantine: 0, blocked: 0 },
+    };
+    const callerMintedEmptyPlan = {
+      ...emptyHeader,
+      plan_digest: mintPlanDigest(emptyHeader),
+    };
+    expect(() =>
+      enableAuthority(applied, {
+        registry,
+        clean_plan: callerMintedEmptyPlan,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
+        enabled_at: TS,
+        command_id: "cmd:empty-plan-enable",
+        expected_state_digest: applied.state_digest,
+      })
+    ).toThrow(/not the complete planner output/);
   });
 });
 
@@ -1279,6 +1307,7 @@ describe("CR-108 post-authority revision / revocation / impact", () => {
       registry,
       expected_parity: parity,
       clean_plan: clean,
+      evidence_input: EMPTY_EVIDENCE_INPUT,
       enabled_at: TS,
       command_id: `cmd:enable-${keys.join("-")}`,
       expected_state_digest: ledger.state_digest,
@@ -1465,6 +1494,38 @@ describe("CR-108 post-authority revision / revocation / impact", () => {
     expect(ledger.revoked_equivalence.length).toBe(1);
     expect(ledger.records.filter((r) => r.status === "active").length).toBe(2);
     expect(ledger.records.some((r) => r.status === "revoked")).toBe(true);
+
+    const revokeEvent = ledger.events[ledger.events.length - 1]!;
+    if (
+      revokeEvent.kind !== "identity_superseded" ||
+      revokeEvent.cause !== "equivalence_revocation"
+    ) {
+      throw new Error("expected the final event to be an equivalence revocation");
+    }
+    const { event_digest: storedEventDigest, ...revokeContent } = revokeEvent;
+    void storedEventDigest;
+    const poisonedContent = {
+      ...revokeContent,
+      revoked_equivalence_digests: [
+        mintInventoryDigest("inventory.operator-equivalence", 1, {
+          authority_ref: "operator:unrelated-future-assertion",
+        }),
+      ],
+    };
+    const poisonedEvent = {
+      ...poisonedContent,
+      event_digest: mintInventoryDigest(
+        "inventory.backfill-event",
+        1,
+        poisonedContent
+      ),
+    };
+    expect(() =>
+      replayBackfillLedger([
+        ...ledger.events.slice(0, -1),
+        poisonedEvent,
+      ])
+    ).toThrow(/must exactly equal the assertion digest/);
 
     expect(() =>
       applyOperatorRevision(ledger, {
@@ -1725,6 +1786,32 @@ describe("CR-108 revision FAIL probes: parity / assertion / replay", () => {
       real.report_digest.digest
     );
 
+    const { report_digest: storedParityDigest, ...parityBody } = real;
+    void storedParityDigest;
+    expect(
+      mintInventoryDigest(PARITY_DIGEST_DOMAIN, 1, parityBody).digest
+    ).toBe(real.report_digest.digest);
+    const graftedBindingBody = {
+      ...parityBody,
+      legacy_binding: {
+        ...parityBody.legacy_binding,
+        view_digest: mintInventoryDigest(PARITY_DIGEST_DOMAIN, 1, {
+          binding: "legacy",
+          parts: [],
+        }),
+      },
+    };
+    expect(() =>
+      verifyAuthorityParityReport({
+        ...graftedBindingBody,
+        report_digest: mintInventoryDigest(
+          PARITY_DIGEST_DOMAIN,
+          1,
+          graftedBindingBody
+        ),
+      })
+    ).toThrow(/legacy_binding\.view_digest/);
+
     const clean = planIdentityBackfill({
       registry,
       current_records: ledger.records,
@@ -1737,6 +1824,7 @@ describe("CR-108 revision FAIL probes: parity / assertion / replay", () => {
         registry,
         expected_parity: { pass: true, checked_deployments: 1, report_digest: ledger.state_digest },
         clean_plan: clean,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
         enabled_at: TS,
         command_id: "cmd:forge-thin",
         expected_state_digest: ledger.state_digest,
@@ -1913,6 +2001,7 @@ describe("CR-108 revision FAIL probes: parity / assertion / replay", () => {
       registry,
       expected_parity: parity,
       clean_plan: clean,
+      evidence_input: EMPTY_EVIDENCE_INPUT,
       enabled_at: TS,
       command_id: "cmd:enable-after-apply",
       expected_state_digest: ledger.state_digest,
@@ -1989,6 +2078,7 @@ describe("CR-108 revision-2 adversarial: actual-read enablement / order / comman
       registry: forward,
       expected_parity: a,
       clean_plan: cleanFwd,
+      evidence_input: EMPTY_EVIDENCE_INPUT,
       enabled_at: TS,
       command_id: "cmd:enable-order-fwd",
       expected_state_digest: ledger.state_digest,
@@ -1997,6 +2087,7 @@ describe("CR-108 revision-2 adversarial: actual-read enablement / order / comman
       registry: reversed,
       expected_parity: b,
       clean_plan: cleanRev,
+      evidence_input: EMPTY_EVIDENCE_INPUT,
       enabled_at: TS,
       command_id: "cmd:enable-order-rev",
       expected_state_digest: ledger.state_digest,
@@ -2061,6 +2152,7 @@ describe("CR-108 revision-2 adversarial: actual-read enablement / order / comman
         registry,
         expected_parity: forged,
         clean_plan: emptyPlan,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
         enabled_at: TS,
         command_id: "cmd:forge-empty-pass",
         expected_state_digest: empty.state_digest,
@@ -2070,6 +2162,7 @@ describe("CR-108 revision-2 adversarial: actual-read enablement / order / comman
       enableAuthority(empty, {
         registry,
         clean_plan: emptyPlan,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
         enabled_at: TS,
         command_id: "cmd:forge-empty-no-expected",
         expected_state_digest: empty.state_digest,
@@ -2211,6 +2304,7 @@ describe("CR-108 revision-2 adversarial: actual-read enablement / order / comman
       registry,
       expected_parity: parity,
       clean_plan: clean,
+      evidence_input: EMPTY_EVIDENCE_INPUT,
       enabled_at: TS,
       command_id: "cmd:enable-original",
       expected_state_digest: enableStateDigest,
@@ -2285,6 +2379,7 @@ describe("CR-108 revision-2 adversarial: actual-read enablement / order / comman
       enableAuthority(ledger, {
         registry,
         clean_plan: clean,
+        evidence_input: EMPTY_EVIDENCE_INPUT,
         enabled_at: TS,
         command_id: "cmd:enable-unseen-after-revision",
         expected_state_digest: ledger.state_digest,
@@ -2313,6 +2408,7 @@ function authorityLike(registry: CollectionRegistryEntry[]) {
     registry,
     expected_parity: parity,
     clean_plan: clean,
+    evidence_input: EMPTY_EVIDENCE_INPUT,
     enabled_at: TS,
     command_id: "cmd:auth-like-enable",
     expected_state_digest: ledger.state_digest,

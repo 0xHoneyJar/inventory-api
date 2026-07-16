@@ -62,6 +62,7 @@ import {
 import {
   IDENTITY_BACKFILL_CONTRACT_VERSION,
   assertIsoUtcTimestamp,
+  decodeBackfillEvidence,
   decodeOperatorEquivalenceAssertion,
   mintInventoryDigest,
   mintRecordDigest,
@@ -80,6 +81,7 @@ import {
   BACKFILL_ACTIONS,
   BACKFILL_REASON_CODES,
   mintPlanDigest,
+  planIdentityBackfill,
 } from "./identity-backfill.js";
 import {
   decodeDeploymentReference,
@@ -943,6 +945,7 @@ function stepState(
 
       const supersededKeys = new Set<string>();
       const affected = new Map<string, VersionedDigest>();
+      const revocableEquivalence = new Map<string, VersionedDigest>();
       for (const pointer of event.superseded) {
         const key = recordKeyOf(pointer);
         const existing = state.records.get(key);
@@ -952,6 +955,13 @@ function stepState(
           );
         }
         supersededKeys.add(key);
+        const basis = existing.identity.equivalence_basis;
+        if (basis.kind !== "single_deployment") {
+          revocableEquivalence.set(
+            versionedDigestKeyOf(basis.assertion_digest),
+            basis.assertion_digest
+          );
+        }
         for (const deployment of existing.identity.deployments) {
           affected.set(deployment.deployment_id.digest, deployment.deployment_id);
         }
@@ -1004,9 +1014,17 @@ function stepState(
       // Revocation bookkeeping + reuse refusal.
       const revoked = new Set(state.revokedEquivalence);
       if (event.cause === "equivalence_revocation") {
-        if (event.revoked_equivalence_digests.length === 0) {
+        const expectedRevoked = [...revocableEquivalence.keys()].sort(compareStrings);
+        const recordedRevoked = event.revoked_equivalence_digests
+          .map(versionedDigestKeyOf)
+          .sort(compareStrings);
+        if (
+          expectedRevoked.length === 0 ||
+          JSON.stringify(recordedRevoked) !== JSON.stringify(expectedRevoked)
+        ) {
           throw new BackfillRevocationError(
-            `${where}: an equivalence revocation must name the invalidated assertion digest(s)`
+            `${where}: revoked_equivalence_digests must exactly equal the assertion digest(s) ` +
+              `on the superseded active identities`
           );
         }
         for (const digest of event.revoked_equivalence_digests) {
@@ -1520,6 +1538,8 @@ export function enableAuthority(
   options: {
     readonly registry: readonly CollectionRegistryEntry[];
     readonly clean_plan: BackfillPlan;
+    /** Raw evidence batch re-decoded and re-planned inside this authority gate. */
+    readonly evidence_input: unknown;
     readonly enabled_at: string;
     readonly command_id: string;
     readonly expected_state_digest: VersionedDigest;
@@ -1604,6 +1624,19 @@ export function enableAuthority(
   if (parity.checked_deployments === 0) {
     throw new BackfillParityError(
       "read-parity proof checked zero deployments; an empty proof proves nothing"
+    );
+  }
+  const verifiedEvidence = decodeBackfillEvidence(options.evidence_input);
+  const recomputedPlan = planIdentityBackfill({
+    registry: options.registry,
+    current_records: ledger.records,
+    evidence: verifiedEvidence,
+    registry_observed_at: clean_plan.registry_observed_at,
+  });
+  if (!sameVersionedDigest(recomputedPlan.plan_digest, clean_plan.plan_digest)) {
+    throw new BackfillIntegrityError(
+      "clean plan is not the complete planner output for the supplied evidence, registry, " +
+        "and current ledger state"
     );
   }
   const quarantinedItems = clean_plan.items.filter(

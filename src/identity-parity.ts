@@ -198,6 +198,15 @@ function compareDigestKeys(left: VD, right: VD): number {
   return lk < rk ? -1 : lk > rk ? 1 : 0;
 }
 
+function sameVersionedDigest(left: VD, right: VD): boolean {
+  return (
+    left.algorithm === right.algorithm &&
+    left.domain === right.domain &&
+    left.major_version === right.major_version &&
+    left.digest === right.digest
+  );
+}
+
 /** Canonical identity-key order for equivalence deployment digests. */
 function sortedDigestKeys(ids: readonly VD[]): readonly string[] {
   return [...ids]
@@ -600,6 +609,46 @@ export function verifyAuthorityParityReport(input: unknown): ReadParityReport {
       "parity_report.entries",
       report.entries.length,
       `exactly checked_deployments (${report.checked_deployments}) entries — omitted entries are refused`
+    );
+  }
+  const expectedLegacyBinding = mintInventoryDigest(
+    PARITY_DIGEST_DOMAIN,
+    PARITY_DIGEST_VERSION,
+    {
+      binding: "legacy",
+      parts: sortProjectionParts(
+        report.entries.map((entry) => ({
+          deployment_id: entry.deployment_id,
+          digest: entry.legacy_projection_digest,
+        }))
+      ),
+    }
+  );
+  if (!sameVersionedDigest(expectedLegacyBinding, report.legacy_binding.view_digest)) {
+    throw new ValidationError(
+      "parity_report.legacy_binding.view_digest",
+      report.legacy_binding.view_digest,
+      `digest recomputed from all ${report.entries.length} legacy projection entries`
+    );
+  }
+  const expectedNewBinding = mintInventoryDigest(
+    PARITY_DIGEST_DOMAIN,
+    PARITY_DIGEST_VERSION,
+    {
+      binding: "new",
+      parts: sortProjectionParts(
+        report.entries.map((entry) => ({
+          deployment_id: entry.deployment_id,
+          digest: entry.new_projection_digest,
+        }))
+      ),
+    }
+  );
+  if (!sameVersionedDigest(expectedNewBinding, report.new_binding.view_digest)) {
+    throw new ValidationError(
+      "parity_report.new_binding.view_digest",
+      report.new_binding.view_digest,
+      `digest recomputed from all ${report.entries.length} new projection entries`
     );
   }
   const expectedPass = report.mismatches.length === 0 && report.checked_deployments > 0;

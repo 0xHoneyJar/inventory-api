@@ -1202,6 +1202,42 @@ function mintCommandDigest(material: unknown): VersionedDigest {
   return mintInventoryDigest("inventory.backfill-command", LEDGER_DIGEST_VERSION, material);
 }
 
+/**
+ * Canonical command material for an operator-authored successor. This binds
+ * every decoded assertion field that reaches the immutable successor while
+ * deliberately excluding source_reference: that transport provenance is not
+ * emitted by either post-authority mutation.
+ */
+function operatorSuccessorCommandMaterial(assertion: OperatorEquivalenceAssertion) {
+  return {
+    authority_ref: assertion.authority_ref,
+    canonical_collection_key: assertion.canonical_collection_key,
+    deployment_ids: sortVersionedDigests(
+      assertion.deployments.map((deployment) => deployment.deployment_id)
+    ),
+    approved_at: assertion.approved_at,
+    assertion_digest: assertion.assertion_digest,
+  };
+}
+
+/**
+ * Bind a curated successor to the exact CR-001 identity the supplied registry
+ * row would mint. Display metadata is intentionally absent because it cannot
+ * change the ledger successor. `null` preserves command-first conflict checks
+ * when a retry removes a formerly present successor row; the unseen-command
+ * path still emits the specific missing-row error below.
+ */
+function curatedSuccessorCommandMaterial(
+  collectionKey: string,
+  registryByKey: ReadonlyMap<string, CollectionRegistryEntry>
+) {
+  const entry = registryByKey.get(collectionKey);
+  return {
+    collection_key: collectionKey,
+    registry_identity: entry === undefined ? null : mintRegistryRowIdentity(entry).identity,
+  };
+}
+
 function appendEvent(
   ledger: BackfillLedger,
   content: Omit<BackfillLedgerEvent, "event_digest">
@@ -1774,8 +1810,7 @@ export function applyOperatorRevision(
     cause: "operator_revision",
     command_id: options.command_id,
     occurred_at: occurredAt,
-    authority_ref: assertion.authority_ref,
-    assertion_digest: assertion.assertion_digest,
+    assertion: operatorSuccessorCommandMaterial(assertion),
     reason: options.reason,
     impact,
   });
@@ -2075,6 +2110,7 @@ export function revokeEquivalence(
           assertion: decodeOperatorEquivalenceAssertion(spec.assertion),
         }
   );
+  const registryByKey = new Map(request.registry.map((entry) => [entry.collectionKey, entry]));
   const command_digest = mintCommandDigest({
     kind: "identity_superseded",
     cause: "equivalence_revocation",
@@ -2085,12 +2121,13 @@ export function revokeEquivalence(
     revoked: request.revoked,
     successors: decodedSuccessors.map((spec) =>
       spec.kind === "curated_row"
-        ? { kind: spec.kind, collection_key: spec.collection_key }
+        ? {
+            kind: spec.kind,
+            ...curatedSuccessorCommandMaterial(spec.collection_key, registryByKey),
+          }
         : {
             kind: spec.kind,
-            assertion_digest: spec.assertion.assertion_digest,
-            authority_ref: spec.assertion.authority_ref,
-            canonical_collection_key: spec.assertion.canonical_collection_key,
+            assertion: operatorSuccessorCommandMaterial(spec.assertion),
           }
     ),
     impact,
@@ -2156,7 +2193,6 @@ export function revokeEquivalence(
     );
   }
 
-  const registryByKey = new Map(request.registry.map((entry) => [entry.collectionKey, entry]));
   const ceilingOf = (key: string): number =>
     Math.max(
       0,

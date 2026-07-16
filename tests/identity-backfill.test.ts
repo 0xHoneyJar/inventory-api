@@ -2281,6 +2281,210 @@ describe("CR-108 revision-2 adversarial: actual-read enablement / order / comman
     ).toThrow(BackfillCommandConflictError);
   });
 
+  it("operator successor timestamps are replay-bound without binding unused provenance", () => {
+    const registry = subsetRegistry("mibera", "mst");
+    let { ledger } = authorityLike(registry);
+    const refs = registry.flatMap((row) => registryDeploymentRefsOf(row));
+    const assertion = decodeOperatorEquivalenceAssertion({
+      schema_version: 1,
+      authority_ref: "operator:successor-digest/001",
+      canonical_collection_key: "mibera",
+      deployments: refs,
+      approved_at: TS,
+      source_reference: "operator:successor-digest/original-transport",
+    });
+    const revision = {
+      assertion,
+      registry,
+      impact: impact({
+        enumeration_ref: "ordering-walk:successor-digest",
+        discovery_complete: true,
+      }),
+      reason: "merge with replay-bound successor",
+      occurred_at: TS,
+      command_id: "cmd:successor-digest-revision",
+      expected_state_digest: ledger.state_digest,
+    };
+
+    ledger = acceptMutation(applyOperatorRevision(ledger, revision));
+    const eventCount = ledger.events.length;
+    const stateDigest = ledger.state_digest.digest;
+
+    const exactReplay = applyOperatorRevision(ledger, revision);
+    expect(exactReplay.status).toBe("accepted");
+    if (exactReplay.status === "accepted") {
+      expect(exactReplay.ledger.events.length).toBe(eventCount);
+      expect(exactReplay.ledger.state_digest.digest).toBe(stateDigest);
+    }
+
+    const transportOnlyReplay = applyOperatorRevision(ledger, {
+      ...revision,
+      assertion: {
+        ...assertion,
+        source_reference: "operator:successor-digest/retried-transport",
+      },
+      expected_state_digest: ledger.state_digest,
+    });
+    expect(transportOnlyReplay.status).toBe("accepted");
+
+    expect(() =>
+      applyOperatorRevision(ledger, {
+        ...revision,
+        assertion: {
+          ...assertion,
+          approved_at: "2026-07-16T01:00:00.000Z",
+        },
+        expected_state_digest: ledger.state_digest,
+      })
+    ).toThrow(BackfillCommandConflictError);
+  });
+
+  it("revocation binds operator approval time and each curated successor identity", () => {
+    const completeImpact = impact({
+      enumeration_ref: "ordering-walk:revocation-successor-digest",
+      discovery_complete: true,
+    });
+
+    const mergedLedger = () => {
+      const registry = subsetRegistry("mibera", "mst");
+      let { ledger } = authorityLike(registry);
+      const refs = registry.flatMap((row) => registryDeploymentRefsOf(row));
+      const mergeAssertion = decodeOperatorEquivalenceAssertion({
+        schema_version: 1,
+        authority_ref: "operator:revocation-source/001",
+        canonical_collection_key: "mibera",
+        deployments: refs,
+        approved_at: TS,
+        source_reference: "operator:revocation-source",
+      });
+      ledger = acceptMutation(
+        applyOperatorRevision(ledger, {
+          assertion: mergeAssertion,
+          registry,
+          impact: completeImpact,
+          reason: "prepare revocation target",
+          occurred_at: TS,
+          command_id: "cmd:prepare-revocation-target",
+          expected_state_digest: ledger.state_digest,
+        })
+      );
+      return { ledger, registry, refs };
+    };
+
+    {
+      let { ledger, registry, refs } = mergedLedger();
+      const merged = ledger.records.find((record) => record.status === "active")!;
+      const successorAssertion = decodeOperatorEquivalenceAssertion({
+        schema_version: 1,
+        authority_ref: "operator:revocation-successor/002",
+        canonical_collection_key: "mibera",
+        deployments: refs,
+        approved_at: TS,
+        source_reference: "operator:revocation-successor/original-transport",
+      });
+      const operatorRequest = {
+        revoked: {
+          collection_key: merged.collection_key,
+          identity_version: merged.identity_version,
+          record_digest: merged.record_digest,
+        },
+        authority_ref: "operator:revoke-to-new-group/001",
+        reason: "replace authority record",
+        successors: [{ kind: "operator_group" as const, assertion: successorAssertion }],
+        registry,
+        impact: completeImpact,
+        revoked_at: TS,
+        command_id: "cmd:revoke-to-new-group",
+        expected_state_digest: ledger.state_digest,
+      };
+
+      ledger = acceptMutation(revokeEquivalence(ledger, operatorRequest));
+      const exactReplay = revokeEquivalence(ledger, operatorRequest);
+      expect(exactReplay.status).toBe("accepted");
+
+      const transportOnlyReplay = revokeEquivalence(ledger, {
+        ...operatorRequest,
+        successors: [
+          {
+            kind: "operator_group",
+            assertion: {
+              ...successorAssertion,
+              source_reference: "operator:revocation-successor/retried-transport",
+            },
+          },
+        ],
+        expected_state_digest: ledger.state_digest,
+      });
+      expect(transportOnlyReplay.status).toBe("accepted");
+
+      expect(() =>
+        revokeEquivalence(ledger, {
+          ...operatorRequest,
+          successors: [
+            {
+              kind: "operator_group",
+              assertion: {
+                ...successorAssertion,
+                approved_at: "2026-07-16T01:00:00.000Z",
+              },
+            },
+          ],
+          expected_state_digest: ledger.state_digest,
+        })
+      ).toThrow(BackfillCommandConflictError);
+    }
+
+    {
+      let { ledger, registry } = mergedLedger();
+      const merged = ledger.records.find((record) => record.status === "active")!;
+      const curatedRequest = {
+        revoked: {
+          collection_key: merged.collection_key,
+          identity_version: merged.identity_version,
+          record_digest: merged.record_digest,
+        },
+        authority_ref: "operator:revoke-to-curation/001",
+        reason: "restore curated rows",
+        successors: [
+          { kind: "curated_row" as const, collection_key: "mibera" },
+          { kind: "curated_row" as const, collection_key: "mst" },
+        ],
+        registry,
+        impact: completeImpact,
+        revoked_at: TS,
+        command_id: "cmd:revoke-to-curation",
+        expected_state_digest: ledger.state_digest,
+      };
+
+      ledger = acceptMutation(revokeEquivalence(ledger, curatedRequest));
+      const exactReplay = revokeEquivalence(ledger, curatedRequest);
+      expect(exactReplay.status).toBe("accepted");
+
+      const displayOnlyRegistry = registry.map((entry) =>
+        entry.collectionKey === "mibera"
+          ? { ...entry, name: `${entry.name} display-only edit` }
+          : entry
+      );
+      const displayOnlyReplay = revokeEquivalence(ledger, {
+        ...curatedRequest,
+        registry: displayOnlyRegistry,
+        expected_state_digest: ledger.state_digest,
+      });
+      expect(displayOnlyReplay.status).toBe("accepted");
+
+      const identityChangingRegistry = registry.map((entry) =>
+        entry.collectionKey === "mibera" ? { ...entry, chainId: 1 } : entry
+      );
+      expect(() =>
+        revokeEquivalence(ledger, {
+          ...curatedRequest,
+          registry: identityChangingRegistry,
+          expected_state_digest: ledger.state_digest,
+        })
+      ).toThrow(BackfillCommandConflictError);
+    }
+  });
+
   it("enableAuthority replay/conflict precedes live parity after later revision", () => {
     const registry = subsetRegistry("mibera", "mst");
     let ledger = createBackfillLedger();

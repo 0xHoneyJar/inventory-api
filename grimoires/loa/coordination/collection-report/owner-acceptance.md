@@ -6,6 +6,15 @@ technical_record_status: conditional
 owner_attestation: pending
 production_go: false
 audited_baseline: 5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
+validity_status: current_for_audited_baseline
+superseded_by: null
+invalidated_at: null
+invalidation_reason: null
+required_reaudit_events:
+  - before_cr_105_issue_ready
+  - before_g2a
+  - before_g2b
+  - audited_evidence_file_changed
 ---
 
 # Conditional Inventory boundary technical acceptance
@@ -279,6 +288,11 @@ human approval, production readiness, or closure of any referenced document's
 conditions. They are cross-boundary context, not inputs to this record's
 reproducible evidence bundle; their PR numbers and SHAs identify what was
 consulted but do not independently verify or satisfy Inventory's gates.
+No condition, verdict, or validity transition in this Inventory record depends
+on the contents of those peer records. Their removal, supersession, or
+unavailability does not change this record's status; only the structured
+invalidation and re-audit events above, Inventory-owned evidence, or an explicit
+superseding Inventory acceptance may do so.
 
 Required runbook procedures:
 

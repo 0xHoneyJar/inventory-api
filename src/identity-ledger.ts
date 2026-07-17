@@ -90,7 +90,7 @@ import {
 import type { CollectionRegistryEntry } from "./collection-registry.js";
 import {
   proveLegacyNewParity,
-  verifyAuthorityParityReport,
+  verifyParityReportSelfConsistency,
   type ReadParityReport,
 } from "./identity-parity.js";
 import { ValidationError } from "./errors.js";
@@ -1641,7 +1641,7 @@ export function enableAuthority(
   if (options.expected_parity !== undefined) {
     let expected: ReadParityReport;
     try {
-      expected = verifyAuthorityParityReport(options.expected_parity);
+      expected = verifyParityReportSelfConsistency(options.expected_parity);
     } catch (error) {
       if (error instanceof ValidationError) {
         throw new BackfillParityError(

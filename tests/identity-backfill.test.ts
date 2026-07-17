@@ -73,6 +73,7 @@ import {
 import {
   proveReadParity,
   proveLegacyNewParity,
+  verifyParityReportSelfConsistency,
   verifyAuthorityParityReport,
   PARITY_DIGEST_DOMAIN,
   LEGACY_PARITY_SOURCE,
@@ -1023,6 +1024,63 @@ describe("CR-108 planner: EVM / Solana / quarantine / blocked", () => {
     ).toBe(true);
     expect(plan.counts.blocked).toBeGreaterThan(0);
   });
+
+  it("treats the full versioned collection id and canonical identity as equality material", () => {
+    const registry = subsetRegistry("mibera");
+    const evidence = emptyEvidence();
+    let ledger = createBackfillLedger();
+    const initial = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence,
+      registry_observed_at: TS,
+    });
+    ledger = applyBackfillPlan(ledger, initial, {
+      applied_at: TS,
+      command_id: "cmd:identity-equality-material",
+      expected_state_digest: ledger.state_digest,
+    });
+    const active = ledger.records.find((record) => record.status === "active")!;
+
+    // Digest bytes alone are insufficient: the digest domain and major version
+    // are part of the collection identifier's versioned key.
+    const changedDomain = {
+      ...active,
+      identity: {
+        ...active.identity,
+        collection_id: {
+          ...active.identity.collection_id,
+          domain: "future.collection.identity",
+        },
+      },
+    };
+    const domainPlan = planIdentityBackfill({
+      registry,
+      current_records: [changedDomain],
+      evidence,
+      registry_observed_at: TS,
+    });
+    expect(domainPlan.items[0]!.action).toBe("update");
+    expect(domainPlan.items[0]!.reason_code).toBe("identity_material_changed");
+
+    // collection_id intentionally excludes display metadata. The canonical
+    // identity projection still detects a grafted identity with the same ID.
+    const changedProjection = {
+      ...active,
+      identity: {
+        ...active.identity,
+        name: "Grafted collection name",
+      },
+    };
+    const projectionPlan = planIdentityBackfill({
+      registry,
+      current_records: [changedProjection],
+      evidence,
+      registry_observed_at: TS,
+    });
+    expect(projectionPlan.items[0]!.action).toBe("update");
+    expect(projectionPlan.items[0]!.reason_code).toBe("identity_material_changed");
+  });
 });
 
 describe("CR-108 ledger: apply / rollback / CAS / command idempotency", () => {
@@ -1517,6 +1575,9 @@ describe("CR-108 parity + authority", () => {
       registry,
     });
     expect(forgedFromElsewhere.pass).toBe(true);
+    expect(verifyParityReportSelfConsistency(forgedFromElsewhere).pass).toBe(true);
+    // Backward-compatible alias has identical artifact-only semantics; neither
+    // helper reads live state or authorizes the empty ledger below.
     expect(verifyAuthorityParityReport(forgedFromElsewhere).pass).toBe(true);
     // Self-consistent report from a different ledger cannot authorize empty state.
     expect(() =>

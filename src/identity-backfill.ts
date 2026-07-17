@@ -68,6 +68,7 @@ import {
   COLLECTION_PROTOCOL_SCHEMA_VERSION,
   DIGEST_DOMAINS,
   Provenance,
+  canonicalize,
   digestVersioned,
   type CollectionDeploymentRef,
   type CollectionIdentity,
@@ -164,6 +165,19 @@ export function versionedDigestKeyOf(digest: VersionedDigest): string {
 }
 
 const digestKeyOf = versionedDigestKeyOf;
+
+/** Canonical CR-001 projection used only for exact identity-material equality. */
+function canonicalIdentityProjectionOf(identity: CollectionIdentity): string {
+  const canonical = runProtocol(canonicalize(identity));
+  if (Either.isLeft(canonical)) {
+    throw new ValidationError(
+      "identity",
+      identity,
+      `canonically encodable ${COLLECTION_PROTOCOL_SCHEMA_VERSION} identity — ${String(canonical.left)}`
+    );
+  }
+  return canonical.right;
+}
 
 function compareStrings(left: string, right: string): number {
   if (left < right) return -1;
@@ -1350,8 +1364,11 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     const rowIdentity = mintRegistryRowIdentity(entry);
     const identityMaterialUnchanged =
       active !== undefined &&
-      active.identity.collection_id.digest === rowIdentity.identity.collection_id.digest &&
-      active.collection_key === entry.collectionKey;
+      active.collection_key === entry.collectionKey &&
+      digestKeyOf(active.identity.collection_id) ===
+        digestKeyOf(rowIdentity.identity.collection_id) &&
+      canonicalIdentityProjectionOf(active.identity) ===
+        canonicalIdentityProjectionOf(rowIdentity.identity);
     const priorNonProxyProvenance = identityMaterialUnchanged
       ? active.provenance
       : [];

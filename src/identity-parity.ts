@@ -32,9 +32,10 @@
  * with the recomputed proof. Accepted-command replay/conflict for the same
  * `command_id` short-circuits before this recompute so later identity
  * revisions cannot turn an identical enable retry into a parity failure.
- * `verifyAuthorityParityReport` remains the strict-decode helper for that
- * audit path and refuses grafted bindings, omitted entries, pass-with-
- * mismatches, and self-referential proposed/proposed source pairs.
+ * `verifyParityReportSelfConsistency` is only the strict-decode helper for
+ * that audit path: it proves the submitted artifact is internally coherent,
+ * not that it reflects live authority state. Live authority proof comes only
+ * from `proveLegacyNewParity` inside `enableAuthority`.
  *
  * Equivalent registry permutations produce one canonical report: every
  * projection part, entry, and view digest is ordered by the stable
@@ -550,11 +551,15 @@ const ReadParityReportSchema = Schema.Struct({
 const decodeParityReport = Schema.decodeUnknownEither(ReadParityReportSchema, STRICT);
 
 /**
- * Strict-decode + re-verify a parity report for authority enablement.
+ * Strict-decode + re-verify a parity report's internal consistency.
+ *
+ * This does NOT read the live ledger or registry and therefore cannot prove
+ * authority parity by itself. `enableAuthority` must recompute with
+ * `proveLegacyNewParity` and may compare this artifact only as an audit copy.
  * Refuses forged domains, grafted digests, omitted entries, pass-with-
  * mismatches, and self-referential proposed/proposed source bindings.
  */
-export function verifyAuthorityParityReport(input: unknown): ReadParityReport {
+export function verifyParityReportSelfConsistency(input: unknown): ReadParityReport {
   const decoded = decodeParityReport(input);
   if (Either.isLeft(decoded)) {
     throw new ValidationError(
@@ -674,9 +679,19 @@ export function verifyAuthorityParityReport(input: unknown): ReadParityReport {
 }
 
 /**
- * Validating constructor: only a strict-verified full parity report may be
- * presented to `enableAuthority`. Thin `{ pass: true }` stubs cannot be minted.
+ * @deprecated The old name overstates what this pure artifact verifier proves.
+ * Use `verifyParityReportSelfConsistency`; live authority proof requires
+ * `proveLegacyNewParity` over the current ledger and registry.
+ */
+export function verifyAuthorityParityReport(input: unknown): ReadParityReport {
+  return verifyParityReportSelfConsistency(input);
+}
+
+/**
+ * Validating constructor for a self-consistent audit copy. Thin `{ pass: true }`
+ * stubs cannot be minted, but the returned artifact is not live authority
+ * evidence until `enableAuthority` independently recomputes and matches it.
  */
 export function bindAuthorityParityEvidence(input: unknown): ReadParityReport {
-  return verifyAuthorityParityReport(input);
+  return verifyParityReportSelfConsistency(input);
 }

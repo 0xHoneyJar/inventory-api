@@ -1,6 +1,6 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "1.9"
+document_version: "2.0"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
@@ -44,7 +44,8 @@ validation_contract:
   pass_output: "PASS inventory_boundary_acceptance_v1"
   failure_output_prefix: "FAIL inventory_boundary_acceptance_v1"
   consuming_pr_evidence: required_before_any_gate_transition
-  acceptance_record_binding: exact_git_commit_and_bridgebuilder_review_marker
+  acceptance_record_binding: detached_sha256_manifest
+  acceptance_record_digest_artifact: grimoires/loa/coordination/collection-report/owner-acceptance.sha256
 superseded_by: null
 invalidated_at: null
 invalidation_reason: null
@@ -113,7 +114,7 @@ non_gating_peer_references:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `1.9`
+**Document version:** `2.0`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -130,10 +131,10 @@ check embedded under **Evidence** against both required checkouts and attach its
 output to any PR proposing a gate transition. Missing objects or digest
 mismatches fail closed. A mismatch, withdrawal, or supersession is
 `stale / blocked` even if the checked-in `validity_status` has not yet been
-updated by a superseding record. The acceptance record intentionally does not
-self-hash: its binding is the exact Git commit plus the exact-head
-`bridgebuilder-review` marker, both of which the consuming PR must cite with the
-validation output.
+updated by a superseding record. The acceptance record is bound without
+self-reference by the detached sibling manifest named in
+`acceptance_record_digest_artifact`. Consumers must cite the exact Git commit,
+exact-head `bridgebuilder-review` marker, manifest, and validation output.
 
 ## Call
 
@@ -477,8 +478,11 @@ matches. A PR proposing any gate transition must attach this output.
 CHECK=inventory_boundary_acceptance_v1
 INVENTORY_REPO="${INVENTORY_REPO:-.}"
 COORDINATOR_REPO="${COORDINATOR_REPO:?set COORDINATOR_REPO to its checkout}"
+ACCEPTANCE_REF="${ACCEPTANCE_REF:-HEAD}"
 INVENTORY_BASE=5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
 COORDINATOR_BASE=f3b1b8ed616836c586545bceb5618507bc0f4e14
+ACCEPTANCE_RECORD=grimoires/loa/coordination/collection-report/owner-acceptance.md
+ACCEPTANCE_MANIFEST=grimoires/loa/coordination/collection-report/owner-acceptance.sha256
 failed=0
 
 verify_blob() {
@@ -522,6 +526,34 @@ verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" dc6f716675a25ed0b5a254
 verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" 2d4d69f998a0ba22d80a89e34bd5b0d486de108aa29274afb331f551099d6ede src/routes.ts
 verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" 055a5981f2e461129cde1db9284512374fe869d8cf8a0c571a87da43f872e34a src/sovereign-metadata.ts
 verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" 97780a5f487a79f9cff3cce2baf1d47a09243803856d2c9c74a6bab2b5ea45a9 tests/collection-registry.test.ts
+
+if ! git -C "$INVENTORY_REPO" cat-file -e "$ACCEPTANCE_REF:$ACCEPTANCE_RECORD" 2>/dev/null ||
+   ! git -C "$INVENTORY_REPO" cat-file -e "$ACCEPTANCE_REF:$ACCEPTANCE_MANIFEST" 2>/dev/null
+then
+  printf 'FAIL %s missing_acceptance_record_or_manifest %s\n' \
+    "$CHECK" "$ACCEPTANCE_REF" >&2
+  failed=1
+else
+  expected_record_digest="$(
+    git -C "$INVENTORY_REPO" cat-file blob "$ACCEPTANCE_REF:$ACCEPTANCE_MANIFEST" \
+      | awk '$2 == "owner-acceptance.md" { print $1 }'
+  )"
+  actual_record_digest="$(
+    git -C "$INVENTORY_REPO" cat-file blob "$ACCEPTANCE_REF:$ACCEPTANCE_RECORD" \
+      | shasum -a 256 \
+      | awk '{ print $1 }'
+  )"
+  if [ -z "$expected_record_digest" ] ||
+     [ "$actual_record_digest" != "$expected_record_digest" ]
+  then
+    printf 'FAIL %s acceptance_record_digest_mismatch expected=%s actual=%s\n' \
+      "$CHECK" "$expected_record_digest" "$actual_record_digest" >&2
+    failed=1
+  else
+    printf 'PASS %s acceptance_record_digest %s %s\n' \
+      "$CHECK" "$actual_record_digest" "$ACCEPTANCE_RECORD"
+  fi
+fi
 
 if [ "$failed" -ne 0 ]
 then

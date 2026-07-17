@@ -1,6 +1,6 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "1.6"
+document_version: "1.7"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
@@ -11,7 +11,8 @@ recorded_at: "2026-07-16T01:36:54-07:00"
 required_attestation_role: independent_inventory_boundary_owner
 attestation_resolution_method: superseding_dispatch_referenced_revision
 attestation_resolution_status: pending
-attestation_record_path: grimoires/loa/coordination/collection-report/owner-acceptance.md
+pending_record_path: grimoires/loa/coordination/collection-report/owner-acceptance.md
+future_attestation_artifact: null
 audited_baseline: 5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
 coordinator_source:
   repository: collection-report-coordinator
@@ -27,6 +28,8 @@ coordinator_source:
       version: "0.6"
       sha256: 682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e
 validity_status: current_for_audited_baseline
+validity_enforcement: consumer_recomputes_bound_digests
+automated_state_mutation: false
 superseded_by: null
 invalidated_at: null
 invalidation_reason: null
@@ -41,28 +44,36 @@ required_reaudit_events:
   - coordinator_artifact_digest_mismatch
 unresolved_conditions:
   - id: inventory_schema_transport_ratification
-    owner: "Shared protocol + Inventory + Sonar"
+    owners: [shared_protocol, inventory, sonar]
+    owner_display: "Shared protocol + Inventory + Sonar"
     gate_effect: blocks_cr_105_unconditional_acceptance_and_g0_g2a
   - id: inventory_rights_provenance
-    owner: "Inventory + Storage/rights authority"
+    owners: [inventory, storage_rights_authority]
+    owner_display: "Inventory + Storage/rights authority"
     gate_effect: blocks_production_rights_claims_and_optional_cr_405
   - id: inventory_equivalence_ratification
-    owner: "Inventory equivalence authority"
+    owners: [inventory_equivalence_authority]
+    owner_display: "Inventory equivalence authority"
     gate_effect: blocks_equivalence_use_in_confirmation_and_work_keys
   - id: inventory_backfill_contract
-    owner: "Inventory + Sonar + Ordering + CR-209A owner"
+    owners: [inventory, sonar, ordering, cr_209a_owner]
+    owner_display: "Inventory + Sonar + Ordering + CR-209A owner"
     gate_effect: blocks_cr_108_issue_ready_and_g2b
   - id: inventory_backfill_evidence
-    owner: "Inventory owner"
+    owners: [inventory]
+    owner_display: "Inventory owner"
     gate_effect: blocks_production_resolver_and_equivalence_enablement
   - id: inventory_capacity_proof
-    owner: "Inventory + Sonar + Operations"
+    owners: [inventory, sonar, operations]
+    owner_display: "Inventory + Sonar + Operations"
     gate_effect: blocks_production_traffic_above_controlled_fixture_cohort
   - id: inventory_operations_readiness
-    owner: "Inventory + Operations + Ordering participant"
+    owners: [inventory, operations, ordering]
+    owner_display: "Inventory + Operations + Ordering participant"
     gate_effect: blocks_g2b_and_cr_209b_owner_go
   - id: inventory_svm_population
-    owner: "Sonar + Inventory"
+    owners: [sonar, inventory]
+    owner_display: "Sonar + Inventory"
     gate_effect: prevents_code_correct_svm_enrichment_from_being_production_proof
 non_gating_peer_references:
   - repository: 0xHoneyJar/sonar-api
@@ -86,7 +97,7 @@ non_gating_peer_references:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `1.6`
+**Document version:** `1.7`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -95,6 +106,13 @@ non_gating_peer_references:
 **Acceptance recorded at:** `2026-07-16T01:36:54-07:00`
 **Verdict:** `conditional`
 **Supersession:** Only a later, dispatch-referenced revision of this file carrying a new document version, acceptance record, and source snapshots may replace this verdict. Evidence invalidation, a failed required re-audit, or withdrawal of a bound coordinator artifact immediately makes this record `stale / blocked` pending supersession; absence of a replacement never preserves usability.
+
+No watcher mutates this file when an invalidating event occurs. The structured
+`validity_enforcement` field makes the contract consumer-enforced: before using
+the record, consumers must recompute the bound coordinator and Inventory
+digests. A mismatch, withdrawal, or supersession is `stale / blocked` even if
+the checked-in `validity_status` has not yet been updated by a superseding
+record. The reproduction commands below are the validation check.
 
 ## Call
 

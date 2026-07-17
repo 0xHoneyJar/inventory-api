@@ -1,9 +1,11 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "1.1"
+document_version: "1.2"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
+acceptance_effect: non_gating_conditional_record
+pending_independent_owner: true
 production_go: false
 audited_baseline: 5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
 validity_status: current_for_audited_baseline
@@ -19,6 +21,31 @@ required_reaudit_events:
   - coordinator_artifact_withdrawn
   - coordinator_artifact_superseded
   - coordinator_artifact_digest_mismatch
+unresolved_conditions:
+  - id: inventory_schema_transport_ratification
+    owner: "Shared protocol + Inventory + Sonar"
+    gate_effect: blocks_cr_105_unconditional_acceptance_and_g0_g2a
+  - id: inventory_rights_provenance
+    owner: "Inventory + Storage/rights authority"
+    gate_effect: blocks_production_rights_claims_and_optional_cr_405
+  - id: inventory_equivalence_ratification
+    owner: "Inventory equivalence authority"
+    gate_effect: blocks_equivalence_use_in_confirmation_and_work_keys
+  - id: inventory_backfill_contract
+    owner: "Inventory + Sonar + Ordering + CR-209A owner"
+    gate_effect: blocks_cr_108_issue_ready_and_g2b
+  - id: inventory_backfill_evidence
+    owner: "Inventory owner"
+    gate_effect: blocks_production_resolver_and_equivalence_enablement
+  - id: inventory_capacity_proof
+    owner: "Inventory + Sonar + Operations"
+    gate_effect: blocks_production_traffic_above_controlled_fixture_cohort
+  - id: inventory_operations_readiness
+    owner: "Inventory + Operations + Ordering participant"
+    gate_effect: blocks_g2b_and_cr_209b_owner_go
+  - id: inventory_svm_population
+    owner: "Sonar + Inventory"
+    gate_effect: prevents_code_correct_svm_enrichment_from_being_production_proof
 ---
 
 # Conditional Inventory boundary technical acceptance
@@ -28,7 +55,7 @@ required_reaudit_events:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `1.1`
+**Document version:** `1.2`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -373,16 +400,20 @@ git show 5f2b8f59f85fd74b2da72160e328ebf89c3b01bd:<path> | shasum -a 256
 
 ## Unresolved conditions
 
-| Condition | Owner | Gate/effect |
-|---|---|---|
-| Ratify `CollectionDeploymentRef.v1`, canonical digest fixtures, and the exact enrichment response schema/transport. | Shared protocol + Inventory + Sonar | Blocks CR-105 unconditional acceptance and G0/G2A. |
-| Add versioned provenance and rights assertion evidence; convert source comments into governed records. | Inventory + Storage/rights authority | Blocks production rights claims and optional CR-405. |
-| Ratify Fractures and every multi-deployment grouping with explicit basis, exact set digest, evidence, authority, and revocation path. | Inventory equivalence authority | Blocks equivalence use in confirmation/work keys. |
-| Name CR-108 source precedence, immutable storage/event owner, retention, quarantine disposition authority, and old/new authority selector. | Inventory + Sonar + Ordering + CR-209A owner | Blocks CR-108 issue-ready status and G2B. |
-| Run production dry-run/backfill and publish counts, parity, collisions, quarantine, rollback, and revocation evidence. | Inventory owner | Blocks production resolver/equivalence enablement. |
-| Prove process-level resolver/enrichment capacity and add aggregate control where metadata can fan out. | Inventory + Sonar + Operations | Blocks production traffic above the controlled fixture cohort. |
-| Publish runbook, alerts, dashboards, on-call routing, and a successful synthetic reconciliation/revocation exercise. | Inventory + Operations + Ordering participant | Blocks G2B/CR-209B owner GO. |
-| Confirm production SVM rows are populated after Sonar reindex; `src/collection-registry.ts:305-309` explicitly warns Pythenians images may remain empty until that happens. | Sonar + Inventory | Prevents treating code-correct SVM enrichment as production proof. |
+The IDs below mirror the structured frontmatter for automation. They describe
+open work and its current blocking effect; they do not confer authority, close a
+gate, or substitute for the independent owner attestation that remains pending.
+
+| ID | Condition | Owner | Gate/effect |
+|---|---|---|---|
+| `inventory_schema_transport_ratification` | Ratify `CollectionDeploymentRef.v1`, canonical digest fixtures, and the exact enrichment response schema/transport. | Shared protocol + Inventory + Sonar | Blocks CR-105 unconditional acceptance and G0/G2A. |
+| `inventory_rights_provenance` | Add versioned provenance and rights assertion evidence; convert source comments into governed records. | Inventory + Storage/rights authority | Blocks production rights claims and optional CR-405. |
+| `inventory_equivalence_ratification` | Ratify Fractures and every multi-deployment grouping with explicit basis, exact set digest, evidence, authority, and revocation path. | Inventory equivalence authority | Blocks equivalence use in confirmation/work keys. |
+| `inventory_backfill_contract` | Name CR-108 source precedence, immutable storage/event owner, retention, quarantine disposition authority, and old/new authority selector. | Inventory + Sonar + Ordering + CR-209A owner | Blocks CR-108 issue-ready status and G2B. |
+| `inventory_backfill_evidence` | Run production dry-run/backfill and publish counts, parity, collisions, quarantine, rollback, and revocation evidence. | Inventory owner | Blocks production resolver/equivalence enablement. |
+| `inventory_capacity_proof` | Prove process-level resolver/enrichment capacity and add aggregate control where metadata can fan out. | Inventory + Sonar + Operations | Blocks production traffic above the controlled fixture cohort. |
+| `inventory_operations_readiness` | Publish runbook, alerts, dashboards, on-call routing, and a successful synthetic reconciliation/revocation exercise. | Inventory + Operations + Ordering participant | Blocks G2B/CR-209B owner GO. |
+| `inventory_svm_population` | Confirm production SVM rows are populated after Sonar reindex; `src/collection-registry.ts:305-309` explicitly warns Pythenians images may remain empty until that happens. | Sonar + Inventory | Prevents treating code-correct SVM enrichment as production proof. |
 
 ## Strongest caveat
 

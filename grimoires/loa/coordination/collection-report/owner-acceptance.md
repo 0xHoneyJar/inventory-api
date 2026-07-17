@@ -1,6 +1,6 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "2.0"
+document_version: "2.1"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
@@ -40,11 +40,11 @@ automated_state_mutation: false
 validation_contract:
   name: inventory_boundary_acceptance_v1
   implementation: embedded_shell_under_evidence
-  required_inputs: [inventory_checkout, coordinator_checkout]
+  required_inputs: [inventory_checkout, coordinator_checkout, exact_reviewed_commit, externally_pinned_acceptance_digest]
   pass_output: "PASS inventory_boundary_acceptance_v1"
   failure_output_prefix: "FAIL inventory_boundary_acceptance_v1"
   consuming_pr_evidence: required_before_any_gate_transition
-  acceptance_record_binding: detached_sha256_manifest
+  acceptance_record_binding: exact_reviewed_commit_plus_external_digest
   acceptance_record_digest_artifact: grimoires/loa/coordination/collection-report/owner-acceptance.sha256
 superseded_by: null
 invalidated_at: null
@@ -114,7 +114,7 @@ non_gating_peer_references:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `2.0`
+**Document version:** `2.1`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -133,8 +133,10 @@ mismatches fail closed. A mismatch, withdrawal, or supersession is
 `stale / blocked` even if the checked-in `validity_status` has not yet been
 updated by a superseding record. The acceptance record is bound without
 self-reference by the detached sibling manifest named in
-`acceptance_record_digest_artifact`. Consumers must cite the exact Git commit,
-exact-head `bridgebuilder-review` marker, manifest, and validation output.
+`acceptance_record_digest_artifact`. The manifest is corroboration, not the
+trust root: consumers must supply the immutable commit from the exact-head
+`bridgebuilder-review` marker and the acceptance digest pinned in the review
+evidence, then cite both inputs, the manifest, and validation output.
 
 ## Call
 
@@ -478,12 +480,26 @@ matches. A PR proposing any gate transition must attach this output.
 CHECK=inventory_boundary_acceptance_v1
 INVENTORY_REPO="${INVENTORY_REPO:-.}"
 COORDINATOR_REPO="${COORDINATOR_REPO:?set COORDINATOR_REPO to its checkout}"
-ACCEPTANCE_REF="${ACCEPTANCE_REF:-HEAD}"
+ACCEPTANCE_REF="${ACCEPTANCE_REF:?set exact 40-character reviewed commit SHA}"
+EXPECTED_ACCEPTANCE_DIGEST="${EXPECTED_ACCEPTANCE_DIGEST:?set externally pinned SHA-256}"
 INVENTORY_BASE=5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
 COORDINATOR_BASE=f3b1b8ed616836c586545bceb5618507bc0f4e14
 ACCEPTANCE_RECORD=grimoires/loa/coordination/collection-report/owner-acceptance.md
 ACCEPTANCE_MANIFEST=grimoires/loa/coordination/collection-report/owner-acceptance.sha256
 failed=0
+
+case "$ACCEPTANCE_REF" in
+  *[!0-9a-f]*|'')
+    printf 'FAIL %s invalid_acceptance_ref %s\n' "$CHECK" "$ACCEPTANCE_REF" >&2
+    exit 1
+    ;;
+esac
+if [ "${#ACCEPTANCE_REF}" -ne 40 ] ||
+   [ "${#EXPECTED_ACCEPTANCE_DIGEST}" -ne 64 ]
+then
+  printf 'FAIL %s immutable_input_shape\n' "$CHECK" >&2
+  exit 1
+fi
 
 verify_blob() {
   scope="$1"
@@ -544,10 +560,12 @@ else
       | awk '{ print $1 }'
   )"
   if [ -z "$expected_record_digest" ] ||
-     [ "$actual_record_digest" != "$expected_record_digest" ]
+     [ "$expected_record_digest" != "$EXPECTED_ACCEPTANCE_DIGEST" ] ||
+     [ "$actual_record_digest" != "$EXPECTED_ACCEPTANCE_DIGEST" ]
   then
-    printf 'FAIL %s acceptance_record_digest_mismatch expected=%s actual=%s\n' \
-      "$CHECK" "$expected_record_digest" "$actual_record_digest" >&2
+    printf 'FAIL %s acceptance_record_digest_mismatch external=%s manifest=%s actual=%s\n' \
+      "$CHECK" "$EXPECTED_ACCEPTANCE_DIGEST" "$expected_record_digest" \
+      "$actual_record_digest" >&2
     failed=1
   else
     printf 'PASS %s acceptance_record_digest %s %s\n' \

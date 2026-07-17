@@ -1,6 +1,6 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "1.8"
+document_version: "1.9"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
@@ -12,10 +12,14 @@ pending_independent_owner: true
 production_go: false
 recorded_at: "2026-07-16T01:36:54-07:00"
 required_attestation_role: independent_inventory_boundary_owner
-attestation_resolution_method: superseding_dispatch_referenced_revision
+attestation_resolution_method: dispatch_referenced_attestation_artifact_and_superseding_revision
 attestation_resolution_status: pending
 pending_record_path: grimoires/loa/coordination/collection-report/owner-acceptance.md
-future_attestation_artifact: null
+future_attestation_artifact:
+  path_template: grimoires/loa/coordination/collection-report/owner-attestation-<dispatch>.md
+  required_document_type: independent_boundary_owner_attestation
+  required_fields: [dispatch, attester_role, attester_identity, attested_at, acceptance_commit, scope]
+  status: not_present
 audited_baseline: 5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
 coordinator_source:
   repository: collection-report-coordinator
@@ -40,10 +44,12 @@ validation_contract:
   pass_output: "PASS inventory_boundary_acceptance_v1"
   failure_output_prefix: "FAIL inventory_boundary_acceptance_v1"
   consuming_pr_evidence: required_before_any_gate_transition
+  acceptance_record_binding: exact_git_commit_and_bridgebuilder_review_marker
 superseded_by: null
 invalidated_at: null
 invalidation_reason: null
 required_reaudit_events:
+  - before_g0
   - before_cr_105_issue_ready
   - before_cr_108_issue_ready
   - before_g2a
@@ -107,7 +113,7 @@ non_gating_peer_references:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `1.8`
+**Document version:** `1.9`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -124,7 +130,10 @@ check embedded under **Evidence** against both required checkouts and attach its
 output to any PR proposing a gate transition. Missing objects or digest
 mismatches fail closed. A mismatch, withdrawal, or supersession is
 `stale / blocked` even if the checked-in `validity_status` has not yet been
-updated by a superseding record.
+updated by a superseding record. The acceptance record intentionally does not
+self-hash: its binding is the exact Git commit plus the exact-head
+`bridgebuilder-review` marker, both of which the consuming PR must cite with the
+validation output.
 
 ## Call
 

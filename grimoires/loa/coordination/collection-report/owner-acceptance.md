@@ -1,6 +1,6 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "2.1"
+document_version: "2.2"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
@@ -114,7 +114,7 @@ non_gating_peer_references:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `2.1`
+**Document version:** `2.2`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -135,8 +135,10 @@ updated by a superseding record. The acceptance record is bound without
 self-reference by the detached sibling manifest named in
 `acceptance_record_digest_artifact`. The manifest is corroboration, not the
 trust root: consumers must supply the immutable commit from the exact-head
-`bridgebuilder-review` marker and the acceptance digest pinned in the review
-evidence, then cite both inputs, the manifest, and validation output.
+`bridgebuilder-review` marker, its verified Codex route receipt, and the
+acceptance digest pinned in the review evidence, then cite those external
+inputs, the manifest, and validation output. Neither same-commit file confers
+approval.
 
 ## Call
 
@@ -498,6 +500,12 @@ if [ "${#ACCEPTANCE_REF}" -ne 40 ] ||
    [ "${#EXPECTED_ACCEPTANCE_DIGEST}" -ne 64 ]
 then
   printf 'FAIL %s immutable_input_shape\n' "$CHECK" >&2
+  exit 1
+fi
+if ! git -C "$INVENTORY_REPO" cat-file -e "$ACCEPTANCE_REF^{commit}" 2>/dev/null
+then
+  printf 'FAIL %s acceptance_ref_not_commit %s\n' \
+    "$CHECK" "$ACCEPTANCE_REF" >&2
   exit 1
 fi
 

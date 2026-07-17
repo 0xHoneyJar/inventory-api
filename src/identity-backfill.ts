@@ -1078,13 +1078,22 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
   }
 
   // ── Operator-approved equivalence ────────────────────────────────────────
-  // Dedupe identical edges (same assertion digest = same approval act).
-  const assertionsByDigest = new Map<string, OperatorEquivalenceAssertion>();
+  // Dedupe only byte-equivalent audit rows. `assertion_digest` identifies the
+  // approved edge but deliberately excludes approval time and evidence source;
+  // those chain-of-custody fields must survive independently of input order.
+  const assertionsByEvidence = new Map<string, OperatorEquivalenceAssertion>();
   for (const assertion of input.evidence.operator_assertions) {
-    assertionsByDigest.set(assertion.assertion_digest.digest, assertion);
+    assertionsByEvidence.set(
+      JSON.stringify(operatorAssertionEvidenceMaterial(assertion)),
+      assertion
+    );
   }
-  const assertions = [...assertionsByDigest.values()].sort((l, r) =>
-    compareStrings(l.authority_ref, r.authority_ref)
+  const assertions = [...assertionsByEvidence.values()].sort(
+    (l, r) =>
+      compareStrings(l.authority_ref, r.authority_ref) ||
+      compareStrings(l.approved_at, r.approved_at) ||
+      compareStrings(l.source_reference, r.source_reference) ||
+      compareStrings(l.assertion_digest.digest, r.assertion_digest.digest)
   );
 
   // Coalesce independently approved assertions of the same canonical edge.
@@ -1327,7 +1336,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
           "operator_ratified",
           ratification.authority_ref,
           ratification.approved_at,
-          { assertion_digest: ratification.assertion_digest }
+          operatorAssertionEvidenceMaterial(ratification)
         )
       )
     );

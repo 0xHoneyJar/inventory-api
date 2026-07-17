@@ -517,6 +517,61 @@ describe("CR-108 planner: EVM / Solana / quarantine / blocked", () => {
     ]);
   });
 
+  it("retains same-edge audit rows when approval time or evidence source differs", () => {
+    const registry = subsetRegistry("mibera");
+    const ref = registryDeploymentRefsOf(registry[0]!)[0]!;
+    const baseAssertion = {
+      schema_version: 1 as const,
+      authority_ref: "operator:ratify-mibera/audit-row",
+      canonical_collection_key: "mibera",
+      deployments: [ref],
+      approved_at: TS,
+      source_reference: "operator:audit/source-a",
+    };
+    const evidence = decodeBackfillEvidence({
+      schema_version: 1,
+      observations: [],
+      proxy_implementations: [],
+      operator_assertions: [
+        baseAssertion,
+        baseAssertion,
+        {
+          ...baseAssertion,
+          approved_at: "2026-07-16T01:00:00.000Z",
+        },
+        {
+          ...baseAssertion,
+          source_reference: "operator:audit/source-b",
+        },
+      ],
+    });
+    expect(new Set(
+      evidence.operator_assertions.map((assertion) => assertion.assertion_digest.digest)
+    ).size).toBe(1);
+
+    const plan = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence,
+      registry_observed_at: TS,
+    });
+    const operatorProvenance = plan.items[0]!.proposed!.provenance.filter(
+      (entry) => entry.source === "operator_ratified"
+    );
+
+    expect(plan.counts.quarantine).toBe(0);
+    expect(operatorProvenance).toHaveLength(3);
+    expect(new Set(
+      operatorProvenance.map((entry) => entry.evidence_digest.digest)
+    ).size).toBe(3);
+    expect(plan.items[0]!.evidence_refs).toEqual(
+      expect.arrayContaining([
+        "operator:audit/source-a",
+        "operator:audit/source-b",
+      ])
+    );
+  });
+
   it("still quarantines overlapping operator assertions with different edge groupings", () => {
     const registry = subsetRegistry("mibera", "mst");
     const miberaRef = registryDeploymentRefsOf(registry[0]!)[0]!;
@@ -1333,10 +1388,19 @@ describe("CR-108 parity + authority", () => {
 
   it("failing parity / quarantine blocks authority", () => {
     const registry = subsetRegistry("mibera");
+    const legacyMiss = () => ({
+      contract_version: "inventory.exact-enrichment.v1" as const,
+      found: false as const,
+    });
     // Empty ledger cannot pass live legacy/new projection — enablement must
     // recompute from actual reads and refuse (caller-minted reports are not
     // the authority source).
     const empty = createBackfillLedger();
+    const emptyMissingLegacyParity = proveReadParity({
+      ledger: empty,
+      registry,
+      legacyLookup: legacyMiss,
+    });
     const emptyPlan = planIdentityBackfill({
       registry,
       current_records: [],
@@ -1390,12 +1454,13 @@ describe("CR-108 parity + authority", () => {
     const parity = proveReadParity({
       ledger,
       registry,
-      legacyLookup: () => ({
-        contract_version: "inventory.exact-enrichment.v1",
-        found: false,
-      }),
+      legacyLookup: legacyMiss,
     });
     expect(parity.pass).toBe(false);
+    expect(parity.entries[0]!.outcome).toBe("missing_in_legacy_view");
+    expect(parity.entries[0]!.new_projection_digest.digest).not.toBe(
+      emptyMissingLegacyParity.entries[0]!.new_projection_digest.digest
+    );
     const clean = planIdentityBackfill({
       registry,
       current_records: ledger.records,

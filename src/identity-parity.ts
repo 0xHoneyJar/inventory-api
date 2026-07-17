@@ -298,7 +298,7 @@ export function proveLegacyNewParity(input: ReadParityInput): ReadParityReport {
 
       let outcome: ReadParityEntry["outcome"] = "match";
       let legacyProjection: unknown = { found: false };
-      let newProjection: unknown = { holders: 0 };
+      let newProjection: unknown = { holders: holders.length };
 
       if (!legacy.found) {
         outcome = "missing_in_legacy_view";

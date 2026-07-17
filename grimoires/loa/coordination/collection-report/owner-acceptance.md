@@ -1,6 +1,6 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "1.2"
+document_version: "1.3"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
@@ -8,6 +8,19 @@ acceptance_effect: non_gating_conditional_record
 pending_independent_owner: true
 production_go: false
 audited_baseline: 5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
+coordinator_source:
+  repository: collection-report-coordinator
+  commit: f3b1b8ed616836c586545bceb5618507bc0f4e14
+  artifacts:
+    - path: grimoires/loa/prd.md
+      version: "0.3"
+      sha256: 4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c
+    - path: grimoires/loa/sdd.md
+      version: "0.5"
+      sha256: 255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09
+    - path: grimoires/loa/sprint.md
+      version: "0.6"
+      sha256: 682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e
 validity_status: current_for_audited_baseline
 superseded_by: null
 invalidated_at: null
@@ -55,7 +68,7 @@ unresolved_conditions:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `1.2`
+**Document version:** `1.3`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.

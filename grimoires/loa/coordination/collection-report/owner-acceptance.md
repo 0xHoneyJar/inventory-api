@@ -1,6 +1,6 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "2.2"
+document_version: "2.3"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
@@ -46,6 +46,7 @@ validation_contract:
   consuming_pr_evidence: required_before_any_gate_transition
   acceptance_record_binding: exact_reviewed_commit_plus_external_digest
   acceptance_record_digest_artifact: grimoires/loa/coordination/collection-report/owner-acceptance.sha256
+  acceptance_record_manifest_path_field: exact_repository_relative_path
 superseded_by: null
 invalidated_at: null
 invalidation_reason: null
@@ -114,7 +115,7 @@ non_gating_peer_references:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `2.2`
+**Document version:** `2.3`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -496,6 +497,13 @@ case "$ACCEPTANCE_REF" in
     exit 1
     ;;
 esac
+case "$EXPECTED_ACCEPTANCE_DIGEST" in
+  *[!0-9a-f]*|'')
+    printf 'FAIL %s invalid_acceptance_digest %s\n' \
+      "$CHECK" "$EXPECTED_ACCEPTANCE_DIGEST" >&2
+    exit 1
+    ;;
+esac
 if [ "${#ACCEPTANCE_REF}" -ne 40 ] ||
    [ "${#EXPECTED_ACCEPTANCE_DIGEST}" -ne 64 ]
 then
@@ -560,7 +568,7 @@ then
 else
   expected_record_digest="$(
     git -C "$INVENTORY_REPO" cat-file blob "$ACCEPTANCE_REF:$ACCEPTANCE_MANIFEST" \
-      | awk '$2 == "owner-acceptance.md" { print $1 }'
+      | awk -v full_path="$ACCEPTANCE_RECORD" '$2 == full_path { print $1 }'
   )"
   actual_record_digest="$(
     git -C "$INVENTORY_REPO" cat-file blob "$ACCEPTANCE_REF:$ACCEPTANCE_RECORD" \

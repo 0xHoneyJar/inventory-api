@@ -70,9 +70,11 @@ unresolved_conditions:
 The `ACCEPT-INVENTORY` dispatch conditionally records Inventory's technical
 ownership of CR-105, CR-108, and its optional CR-405 participation within the
 boundaries below. Independent owner attestation remains pending; this is not a
-production GO. CR-105
-may become issue-ready after the shared deployment schema and exact lookup wire
-shape are ratified. CR-108 and production resolver enablement remain blocked
+production GO. For issue creation only, CR-105 may become issue-ready after the
+shared deployment schema and exact lookup wire shape are ratified. That narrow
+threshold does not make owner acceptance unconditional: the provenance, rights,
+and equivalence conditions below still block unconditional acceptance and
+production use. CR-108 and production resolver enablement remain blocked
 until the backfill, equivalence, reconciliation, rollback, and operating evidence
 listed here exists. No report order or shared-work key may trust today's registry
 shape directly.
@@ -121,7 +123,10 @@ only to the baseline named above and must not be projected onto a newer `main`.
 | Capacity | Metadata pages are capped at 100 tokens, per-request fan-out defaults to 8, page budget defaults to 15s and is capped at 25s under the 30s request timeout. The source explicitly states there is no process-global semaphore, inbound rate limit, or metadata cache. | Exact enrichment must remain local/no-fanout. Existing metadata fetch bounds do not establish aggregate production capacity for resolver traffic. |
 | Operations | Railway supplies `/health`, restart-on-failure, and three retries. Metadata degradation is aggregated to one warning per page. No registry/backfill parity metrics, quarantine dashboard, rights/equivalence audit stream, safe-stop runbook, or reconciliation job exists. | Operational acceptance is conditional on the runbook, metrics, alerts, and named on-call split below. |
 
-## Accepted interfaces
+## Conditionally accepted interface boundaries
+
+These are technical boundary constraints for subsequent work, not independently
+attested owner acceptance or authorization to enable them in production.
 
 ### Existing compatibility surface
 

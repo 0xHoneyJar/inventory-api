@@ -14,6 +14,8 @@
     "mcp:emit": "bun src/emit-mcp.ts"
   },
   "dependencies": {
+    "@freeside/collection-protocol": "file:vendor/collection-protocol/freeside-collection-protocol-1.0.0.tgz",
+    "effect": "^3.21.0",
     "ethereum-cryptography": "^2.2.1",
     "zod": "^3.23.8"
   },

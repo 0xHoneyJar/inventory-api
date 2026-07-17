@@ -1,11 +1,21 @@
-# Inventory boundary owner acceptance
+---
+document_type: boundary_owner_acceptance_record
+document_version: "1.1"
+dispatch: collection-report-coordinator-f09.52
+technical_record_status: conditional
+owner_attestation: pending
+production_go: false
+audited_baseline: 5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
+---
+
+# Conditional Inventory boundary technical acceptance
 
 **Dispatch:** `ACCEPT-INVENTORY` (`collection-report-coordinator-f09.52`)
 **Owner boundary:** `inventory-api`
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `1.0`
+**Document version:** `1.1`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -318,6 +328,26 @@ Coordinator requirements:
 - `tests/collection-registry.test.ts:86-256` — current proxy/mirror and SVM proxy
   fixtures; no explicit equivalence/backfill fixture exists.
 - `railway.toml:1-10` — current health/restart posture.
+
+The audited commit is the source-tree boundary for these claims. Line ranges
+above are reader navigation only; the following content digests bind the exact
+files inspected at that commit independently of later line movement:
+
+| Evidence path | SHA-256 at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` |
+|---|---|
+| `.well-known/beacon.json` | `79f8e6f56baf34adac50d42f28421b1dce6307539f1c033aa37bfb2b81bc540a` |
+| `railway.toml` | `cdf6a2c4fe807263e2bc3450507112eadda1163a7ce176e726e18af0124967cf` |
+| `src/collection-registry.ts` | `e44ed63d960d4af57e465d3c420650c23bd566ef46ec715866b1192e7befb2a1` |
+| `src/inventory.ts` | `dc6f716675a25ed0b5a25423b4822d61254b060d6db1bd05d5a04fafaec82b18` |
+| `src/routes.ts` | `2d4d69f998a0ba22d80a89e34bd5b0d486de108aa29274afb331f551099d6ede` |
+| `src/sovereign-metadata.ts` | `055a5981f2e461129cde1db9284512374fe869d8cf8a0c571a87da43f872e34a` |
+| `tests/collection-registry.test.ts` | `97780a5f487a79f9cff3cce2baf1d47a09243803856d2c9c74a6bab2b5ea45a9` |
+
+Reproduce any row from an Inventory checkout with:
+
+```sh
+git show 5f2b8f59f85fd74b2da72160e328ebf89c3b01bd:<path> | shasum -a 256
+```
 
 ## Unresolved conditions
 

@@ -12,9 +12,13 @@ invalidated_at: null
 invalidation_reason: null
 required_reaudit_events:
   - before_cr_105_issue_ready
+  - before_cr_108_issue_ready
   - before_g2a
   - before_g2b
   - audited_evidence_file_changed
+  - coordinator_artifact_withdrawn
+  - coordinator_artifact_superseded
+  - coordinator_artifact_digest_mismatch
 ---
 
 # Conditional Inventory boundary technical acceptance
@@ -55,11 +59,13 @@ production backfill/reconciliation path.
 
 This record is a point-in-time technical acceptance, not human or operator
 approval and not a production GO. Re-audit the facts below against the then-current
-Inventory baseline before CR-105 becomes issue-ready, before G2A, before G2B,
-and whenever a file cited under **Evidence** changes from the pinned audited
-baseline. A re-audit must record its new baseline and superseding document
-version; until then, the findings apply only to the baseline named above and
-must not be projected onto a newer `main`.
+Inventory baseline before CR-105 becomes issue-ready, before CR-108 becomes
+issue-ready, before G2A, before G2B, and whenever a file cited under
+**Evidence** changes from the pinned audited baseline. Withdrawal,
+supersession, or digest mismatch of any bound coordinator artifact invalidates
+this record immediately and also requires re-audit. A re-audit must record its
+new baseline and superseding document version; until then, the findings apply
+only to the baseline named above and must not be projected onto a newer `main`.
 
 ## Identifier glossary
 
@@ -274,8 +280,10 @@ order truth. Storage owns mirrored bytes, retention, and pointer flips. CR-404's
 report-wide capacity dashboard remains the operations owner's surface; Inventory
 must export its boundary metrics into it but must not redefine report lifecycle.
 
-Those peer duties are acknowledged only through conditional technical owner
-acceptances: Sonar `ACCEPT-SONAR` / `collection-report-coordinator-f09.40`
+The following peer acceptance records are non-gating references that describe
+where adjacent conditional technical assessments were recorded; they do not
+acknowledge, satisfy, or authorize the peer duties named above: Sonar
+`ACCEPT-SONAR` / `collection-report-coordinator-f09.40`
 ([PR #163](https://github.com/0xHoneyJar/sonar-api/pull/163) at
 `87487d1d268b7299c7bd880cc8e328ad2e6e861f`), Storage `ACCEPT-STORAGE` /
 `collection-report-coordinator-f09.55`

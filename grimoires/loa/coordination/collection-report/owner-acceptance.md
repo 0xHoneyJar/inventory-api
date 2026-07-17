@@ -1,10 +1,13 @@
 ---
 document_type: boundary_owner_acceptance_record
-document_version: "1.7"
+document_version: "1.8"
 dispatch: collection-report-coordinator-f09.52
 technical_record_status: conditional
 owner_attestation: pending
 acceptance_effect: non_gating_conditional_record
+acceptance_phase: technical_record_pending_owner_attestation
+record_kind: conditional_technical_record
+approval_effect: none
 pending_independent_owner: true
 production_go: false
 recorded_at: "2026-07-16T01:36:54-07:00"
@@ -30,6 +33,13 @@ coordinator_source:
 validity_status: current_for_audited_baseline
 validity_enforcement: consumer_recomputes_bound_digests
 automated_state_mutation: false
+validation_contract:
+  name: inventory_boundary_acceptance_v1
+  implementation: embedded_shell_under_evidence
+  required_inputs: [inventory_checkout, coordinator_checkout]
+  pass_output: "PASS inventory_boundary_acceptance_v1"
+  failure_output_prefix: "FAIL inventory_boundary_acceptance_v1"
+  consuming_pr_evidence: required_before_any_gate_transition
 superseded_by: null
 invalidated_at: null
 invalidation_reason: null
@@ -97,7 +107,7 @@ non_gating_peer_references:
 **Audited baseline:** `origin/main` at `5f2b8f59f85fd74b2da72160e328ebf89c3b01bd` (fetched 2026-07-16)
 **Coordinator source snapshot:** `collection-report-coordinator` at `f3b1b8ed616836c586545bceb5618507bc0f4e14`
 **Coordinator artifacts:** `grimoires/loa/prd.md` v0.3 (`sha256:4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c`), `grimoires/loa/sdd.md` v0.5 (`sha256:255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09`), `grimoires/loa/sprint.md` v0.6 (`sha256:682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e`). Reproduce each digest from a checkout of `collection-report-coordinator` with `git show f3b1b8ed616836c586545bceb5618507bc0f4e14:<path> | shasum -a 256`.
-**Document version:** `1.7`
+**Document version:** `1.8`
 **Technical record status:** `conditional`
 **Owner attestation status:** `pending`
 **Accepted by:** No independent Inventory boundary owner yet. `ACCEPT-INVENTORY` records the dispatch's conditional technical assessment only.
@@ -109,10 +119,12 @@ non_gating_peer_references:
 
 No watcher mutates this file when an invalidating event occurs. The structured
 `validity_enforcement` field makes the contract consumer-enforced: before using
-the record, consumers must recompute the bound coordinator and Inventory
-digests. A mismatch, withdrawal, or supersession is `stale / blocked` even if
-the checked-in `validity_status` has not yet been updated by a superseding
-record. The reproduction commands below are the validation check.
+the record, consumers must run the named `inventory_boundary_acceptance_v1`
+check embedded under **Evidence** against both required checkouts and attach its
+output to any PR proposing a gate transition. Missing objects or digest
+mismatches fail closed. A mismatch, withdrawal, or supersession is
+`stale / blocked` even if the checked-in `validity_status` has not yet been
+updated by a superseding record.
 
 ## Call
 
@@ -446,22 +458,68 @@ files inspected at that commit independently of later line movement:
 | `src/sovereign-metadata.ts` | `055a5981f2e461129cde1db9284512374fe869d8cf8a0c571a87da43f872e34a` |
 | `tests/collection-registry.test.ts` | `97780a5f487a79f9cff3cce2baf1d47a09243803856d2c9c74a6bab2b5ea45a9` |
 
-Reproduce the path-preserving digest list from an Inventory checkout with:
+Run the versioned validation contract below from any checkout. Set
+`INVENTORY_REPO` and `COORDINATOR_REPO` to the two local repositories. It emits
+one path-labeled content-digest result per bound blob, fails closed on a missing
+object or mismatch, and emits the named final PASS line only when every blob
+matches. A PR proposing any gate transition must attach this output.
 
 ```sh
-BASE=5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
-for evidence_path in \
-  .well-known/beacon.json \
-  railway.toml \
-  src/collection-registry.ts \
-  src/inventory.ts \
-  src/routes.ts \
-  src/sovereign-metadata.ts \
-  tests/collection-registry.test.ts
-do
-  digest="$(git show "$BASE:$evidence_path" | shasum -a 256 | awk '{ print $1 }')"
-  printf '%s  %s\n' "$digest" "$evidence_path"
-done
+CHECK=inventory_boundary_acceptance_v1
+INVENTORY_REPO="${INVENTORY_REPO:-.}"
+COORDINATOR_REPO="${COORDINATOR_REPO:?set COORDINATOR_REPO to its checkout}"
+INVENTORY_BASE=5f2b8f59f85fd74b2da72160e328ebf89c3b01bd
+COORDINATOR_BASE=f3b1b8ed616836c586545bceb5618507bc0f4e14
+failed=0
+
+verify_blob() {
+  scope="$1"
+  repository="$2"
+  commit="$3"
+  expected="$4"
+  evidence_path="$5"
+
+  if ! git -C "$repository" cat-file -e "$commit:$evidence_path" 2>/dev/null
+  then
+    printf 'FAIL %s missing_object %s %s:%s\n' \
+      "$CHECK" "$scope" "$commit" "$evidence_path" >&2
+    failed=1
+    return
+  fi
+
+  actual="$(
+    git -C "$repository" cat-file blob "$commit:$evidence_path" \
+      | shasum -a 256 \
+      | awk '{ print $1 }'
+  )"
+  if [ "$actual" != "$expected" ]
+  then
+    printf 'FAIL %s digest_mismatch %s %s %s expected=%s actual=%s\n' \
+      "$CHECK" "$scope" "$commit" "$evidence_path" "$expected" "$actual" >&2
+    failed=1
+    return
+  fi
+  printf 'PASS %s content_digest %s %s %s\n' \
+    "$CHECK" "$scope" "$actual" "$evidence_path"
+}
+
+verify_blob coordinator "$COORDINATOR_REPO" "$COORDINATOR_BASE" 4866ca1ccb580e7743a6f3523e73249d4ade13b0931424df1be782f644247f0c grimoires/loa/prd.md
+verify_blob coordinator "$COORDINATOR_REPO" "$COORDINATOR_BASE" 255ec5874f944b9c255ba7d9b58d1abe073c1989aded55a39483b23d73cd0f09 grimoires/loa/sdd.md
+verify_blob coordinator "$COORDINATOR_REPO" "$COORDINATOR_BASE" 682368e29051309c4d0c16e457a14127f207f9824b58ac75138f96fcbb1ed04e grimoires/loa/sprint.md
+verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" 79f8e6f56baf34adac50d42f28421b1dce6307539f1c033aa37bfb2b81bc540a .well-known/beacon.json
+verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" cdf6a2c4fe807263e2bc3450507112eadda1163a7ce176e726e18af0124967cf railway.toml
+verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" e44ed63d960d4af57e465d3c420650c23bd566ef46ec715866b1192e7befb2a1 src/collection-registry.ts
+verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" dc6f716675a25ed0b5a25423b4822d61254b060d6db1bd05d5a04fafaec82b18 src/inventory.ts
+verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" 2d4d69f998a0ba22d80a89e34bd5b0d486de108aa29274afb331f551099d6ede src/routes.ts
+verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" 055a5981f2e461129cde1db9284512374fe869d8cf8a0c571a87da43f872e34a src/sovereign-metadata.ts
+verify_blob inventory "$INVENTORY_REPO" "$INVENTORY_BASE" 97780a5f487a79f9cff3cce2baf1d47a09243803856d2c9c74a6bab2b5ea45a9 tests/collection-registry.test.ts
+
+if [ "$failed" -ne 0 ]
+then
+  printf 'FAIL %s validation_failed\n' "$CHECK" >&2
+  exit 1
+fi
+printf 'PASS %s\n' "$CHECK"
 ```
 
 ## Unresolved conditions

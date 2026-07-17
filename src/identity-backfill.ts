@@ -1439,14 +1439,13 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
 }
 
 function planItemSortKey(item: BackfillPlanItem): string {
-  // Unit separator — never appears in keys/reason codes; keeps the source
-  // file UTF-8 text (a literal NUL byte makes tooling treat the module as binary).
-  const sep = "\u001f";
-  return [
+  // Encode the tuple structurally: evidence references are external input and
+  // may contain any human-readable delimiter, including commas or U+001F.
+  return JSON.stringify([
     item.collection_key ?? "~",
     item.action,
     item.reason_code,
-    item.evidence_refs.join(","),
-    item.affected_deployment_ids.map(digestKeyOf).join(","),
-  ].join(sep);
+    item.evidence_refs,
+    item.affected_deployment_ids.map(digestKeyOf),
+  ]);
 }

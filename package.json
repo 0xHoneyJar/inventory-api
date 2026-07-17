@@ -5,6 +5,7 @@
   "private": true,
   "description": "Sovereign read-side inventory aggregator — a Hyper (Bun) service consumed over HTTP + MCP",
   "scripts": {
+    "prepare": "./scripts/prepare-effect.sh",
     "dev": "bun --hot src/app.ts",
     "start": "bun src/app.ts",
     "serve": "bun src/app.ts",

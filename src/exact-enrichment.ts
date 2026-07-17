@@ -94,6 +94,7 @@ import {
   makeCollectionIdentity,
   type CollectionDeploymentInput,
   type CollectionDeploymentRef,
+  type CollectionIdentity,
   type VersionedDigest,
 } from "@freeside/collection-protocol";
 import {
@@ -168,8 +169,12 @@ const EXPECTED_DIGEST_INTEGRITY =
  * strict-decoded and their `deployment_id` is RECOMPUTED and verified. Either
  * way the returned ref's digest is protocol-verified — hybrids fail both
  * decoders.
+ *
+ * Exported as this module's ONE deployment-reference boundary: CR-108's
+ * backfill evidence decoders reuse it verbatim so a digest-forged or hybrid
+ * reference is rejected identically everywhere, with one implementation.
  */
-function decodeDeploymentQuery(input: unknown): CollectionDeploymentRef {
+export function decodeDeploymentReference(input: unknown): CollectionDeploymentRef {
   const asInput = Effect.runSync(Effect.either(makeCollectionDeploymentRef(input)));
   if (Either.isRight(asInput)) {
     return asInput.right;
@@ -421,6 +426,8 @@ interface RowIdentity {
   /** Verified refs, sorted by deployment_id per CR-001's canonical set rule. */
   readonly deployments: readonly CollectionDeploymentRef[];
   readonly assertionRef: string | undefined;
+  /** The full package-assembled identity (CR-108 consumes its collection_id). */
+  readonly identity: CollectionIdentity;
 }
 
 /**
@@ -428,8 +435,10 @@ interface RowIdentity {
  * the basis must strict-decode through the package's `EquivalenceBasis`
  * schema, and the (deployments, basis) pair must pass the package's own
  * `makeCollectionIdentity` assembly (re-verifies every deployment digest,
- * the sorted-set rule, and the single/multi invariant). The identity's
- * `collection_id` is discarded — logical-identity authority is CR-108's.
+ * the sorted-set rule, and the single/multi invariant). The lookup index
+ * still serves only basis + deployments; the assembled identity (with its
+ * minted `collection_id`) is surfaced through `mintRegistryRowIdentity` —
+ * logical-identity authority is CR-108's backfill deliverable.
  */
 function buildRowIdentity(
   entry: CollectionRegistryEntry,
@@ -466,6 +475,11 @@ function buildRowIdentity(
     Effect.either(
       makeCollectionIdentity({
         schema_version: COLLECTION_PROTOCOL_SCHEMA_VERSION,
+        // The belt-gateway join key rides inside the identity so a backfilled
+        // record is self-describing. collection_id is METADATA-INVARIANT by
+        // CR-001's canonical rule ("display metadata and aliases are
+        // excluded"), so embedding the key cannot move logical identity.
+        collection_key: entry.collectionKey,
         deployments: sorted,
         equivalence_basis: basis.right,
       })
@@ -478,7 +492,38 @@ function buildRowIdentity(
     );
   }
 
-  return { basis: basis.right, deployments: sorted, assertionRef };
+  return { basis: basis.right, deployments: sorted, assertionRef, identity: identity.right };
+}
+
+/** A registry row's full CR-001 identity, as `mintRegistryRowIdentity` mints it. */
+export interface RegistryRowIdentity {
+  /**
+   * The package-assembled `CollectionIdentity`: verified deployments (sorted
+   * per the canonical set rule), the row's exact equivalence basis, the
+   * embedded `collection_key`, and the protocol-minted `collection_id`.
+   */
+  readonly identity: CollectionIdentity;
+  /** `inventory-registry:<collection_key>` — present iff the basis is `registry`. */
+  readonly assertion_ref?: string;
+}
+
+/**
+ * Mint one registry row's full CR-001 `CollectionIdentity` — the same
+ * derivation the CR-105 index validates at module load, with the
+ * `collection_id` KEPT instead of discarded. This is CR-108's curated-source
+ * seam: the identity backfill proposes exactly these identities, so the
+ * pre-authority new-key view is parity-with-the-lookup by construction.
+ * Fail-closed like the index build: a row that cannot mint verified identity
+ * throws rather than returning a guess.
+ */
+export function mintRegistryRowIdentity(
+  entry: CollectionRegistryEntry
+): RegistryRowIdentity {
+  const row = buildRowIdentity(entry, registryDeploymentRefsOf(entry));
+  return {
+    identity: row.identity,
+    ...(row.assertionRef !== undefined ? { assertion_ref: row.assertionRef } : {}),
+  };
 }
 
 // ── Immutable lookup boundary ────────────────────────────────────────────────
@@ -604,7 +649,7 @@ const _exactDeployments = buildExactDeploymentIndex(listCollectionRegistry());
  *   the registry, or any other lookup's result.
  */
 export function lookupExactDeployment(input: unknown): ExactEnrichmentResult {
-  const query = decodeDeploymentQuery(input);
+  const query = decodeDeploymentReference(input);
   const hit = _exactDeployments.get(query.deployment_id.digest);
 
   if (!hit) {

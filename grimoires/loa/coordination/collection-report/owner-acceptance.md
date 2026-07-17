@@ -266,7 +266,9 @@ acceptances: Sonar `ACCEPT-SONAR` / `collection-report-coordinator-f09.40`
 ([PR #473](https://github.com/0xHoneyJar/loa-freeside/pull/473) at
 `9c22936c062b6491a50aeac4837d73f50ae0159a`). These references do not imply
 human approval, production readiness, or closure of any referenced document's
-conditions.
+conditions. They are cross-boundary context, not inputs to this record's
+reproducible evidence bundle; their PR numbers and SHAs identify what was
+consulted but do not independently verify or satisfy Inventory's gates.
 
 Required runbook procedures:
 
@@ -299,6 +301,8 @@ Coordinator requirements:
 
 - `src/collection-registry.ts:6-103,170-395` — registry model, strategies,
   rights policy, and current rows.
+- `src/collection-registry.ts:305-309` — the source-level PYTH-2 caveat that
+  production Pythenians images remain empty until the post-PYTH-1 reindex.
 - `src/collection-registry.ts:415-455` — effective proxy default and module-load
   mirror/proxy invariant.
 - `src/collection-registry.ts:458-475,567-575` — aliases participate in current
@@ -326,7 +330,7 @@ Coordinator requirements:
 | Run production dry-run/backfill and publish counts, parity, collisions, quarantine, rollback, and revocation evidence. | Inventory owner | Blocks production resolver/equivalence enablement. |
 | Prove process-level resolver/enrichment capacity and add aggregate control where metadata can fan out. | Inventory + Sonar + Operations | Blocks production traffic above the controlled fixture cohort. |
 | Publish runbook, alerts, dashboards, on-call routing, and a successful synthetic reconciliation/revocation exercise. | Inventory + Operations + Ordering participant | Blocks G2B/CR-209B owner GO. |
-| Confirm production SVM rows are populated after Sonar reindex; current source explicitly warns Pythenians images may remain empty until that happens. | Sonar + Inventory | Prevents treating code-correct SVM enrichment as production proof. |
+| Confirm production SVM rows are populated after Sonar reindex; `src/collection-registry.ts:305-309` explicitly warns Pythenians images may remain empty until that happens. | Sonar + Inventory | Prevents treating code-correct SVM enrichment as production proof. |
 
 ## Strongest caveat
 

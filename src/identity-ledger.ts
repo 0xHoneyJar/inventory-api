@@ -784,7 +784,7 @@ function insertRecords(
     records.set(key, deepFreeze({ ...existing, status: supersededStatus }));
     activeByKey.delete(existing.collection_key);
     for (const deployment of existing.identity.deployments) {
-      activeByDeployment.delete(deployment.deployment_id.digest);
+      activeByDeployment.delete(versionedDigestKeyOf(deployment.deployment_id));
     }
   }
 
@@ -811,7 +811,9 @@ function insertRecords(
       );
     }
     for (const deployment of content.identity.deployments) {
-      const holder = activeByDeployment.get(deployment.deployment_id.digest);
+      const holder = activeByDeployment.get(
+        versionedDigestKeyOf(deployment.deployment_id)
+      );
       if (holder !== undefined) {
         throw new BackfillIntegrityError(
           `${where}: deployment ${deployment.normalized_address} would be claimed by two ` +
@@ -826,7 +828,7 @@ function insertRecords(
     activeByKey.set(content.collection_key, key);
     versionCeiling.set(content.collection_key, content.identity_version);
     for (const deployment of content.identity.deployments) {
-      activeByDeployment.set(deployment.deployment_id.digest, key);
+      activeByDeployment.set(versionedDigestKeyOf(deployment.deployment_id), key);
     }
   }
 
@@ -963,7 +965,10 @@ function stepState(
           );
         }
         for (const deployment of existing.identity.deployments) {
-          affected.set(deployment.deployment_id.digest, deployment.deployment_id);
+          affected.set(
+            versionedDigestKeyOf(deployment.deployment_id),
+            deployment.deployment_id
+          );
         }
       }
 
@@ -975,21 +980,21 @@ function stepState(
       const successorClaims = new Map<string, string>();
       for (const successor of successors) {
         for (const deployment of successor.identity.deployments) {
-          const digest = deployment.deployment_id.digest;
-          if (!affected.has(digest)) {
+          const deploymentKey = versionedDigestKeyOf(deployment.deployment_id);
+          if (!affected.has(deploymentKey)) {
             throw new BackfillRevocationError(
               `${where}: successor "${successor.collection_key}" claims deployment ` +
                 `${deployment.normalized_address} which no superseded identity held`
             );
           }
-          const prior = successorClaims.get(digest);
+          const prior = successorClaims.get(deploymentKey);
           if (prior !== undefined) {
             throw new BackfillRevocationError(
               `${where}: successors "${prior}" and "${successor.collection_key}" both claim ` +
                 `deployment ${deployment.normalized_address}`
             );
           }
-          successorClaims.set(digest, successor.collection_key);
+          successorClaims.set(deploymentKey, successor.collection_key);
         }
       }
       if (successorClaims.size !== affected.size) {
@@ -1864,12 +1869,12 @@ export function applyOperatorRevision(
   const byDeployment = new Map<string, BackfillIdentityRecord>();
   for (const record of active) {
     for (const deployment of record.identity.deployments) {
-      byDeployment.set(deployment.deployment_id.digest, record);
+      byDeployment.set(versionedDigestKeyOf(deployment.deployment_id), record);
     }
   }
   const members = new Map<string, BackfillIdentityRecord>();
   for (const deployment of assertion.deployments) {
-    const record = byDeployment.get(deployment.deployment_id.digest);
+    const record = byDeployment.get(versionedDigestKeyOf(deployment.deployment_id));
     if (!record) {
       throw new BackfillRevocationError(
         `assertion ${assertion.authority_ref} references deployment ` +
@@ -1886,11 +1891,13 @@ export function applyOperatorRevision(
   }
   const memberRecords = [...members.values()];
   const assertionDigests = new Set(
-    assertion.deployments.map((deployment) => deployment.deployment_id.digest)
+    assertion.deployments.map((deployment) =>
+      versionedDigestKeyOf(deployment.deployment_id)
+    )
   );
   for (const record of memberRecords) {
     for (const deployment of record.identity.deployments) {
-      if (!assertionDigests.has(deployment.deployment_id.digest)) {
+      if (!assertionDigests.has(versionedDigestKeyOf(deployment.deployment_id))) {
         throw new BackfillRevocationError(
           `assertion ${assertion.authority_ref} covers only part of active identity ` +
             `"${record.collection_key}" v${record.identity_version}; partial-identity grouping ` +
@@ -2034,7 +2041,11 @@ function mergeProxyImplementations(
   const byKey = new Map<string, RecordedProxyImplementation>();
   for (const group of groups) {
     for (const binding of group) {
-      const key = `${binding.proxy_id.digest}:${binding.implementation_id.digest}:${binding.source_reference}`;
+      const key = JSON.stringify([
+        versionedDigestKeyOf(binding.proxy_id),
+        versionedDigestKeyOf(binding.implementation_id),
+        binding.source_reference,
+      ]);
       byKey.set(key, binding);
     }
   }

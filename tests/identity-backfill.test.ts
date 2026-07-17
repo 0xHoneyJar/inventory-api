@@ -42,6 +42,7 @@ import {
   decodeOperatorEquivalenceAssertion,
   mintInventoryDigest,
   mintPlanDigest,
+  versionedDigestKeyOf,
   type BackfillEvidence,
 } from "../src/identity-backfill.js";
 import {
@@ -570,6 +571,93 @@ describe("CR-108 planner: EVM / Solana / quarantine / blocked", () => {
         "operator:audit/source-b",
       ])
     );
+  });
+
+  it("canonicalizes evidence sets across row order and exact duplicates", () => {
+    const registry = subsetRegistry("mibera", "mst");
+    const rowRefs = registry.map((row) => registryDeploymentRefsOf(row));
+    const observations = registry.map((row, index) => ({
+      schema_version: 1 as const,
+      kind: "deployment" as const,
+      deployment: rowRefs[index]![0]!,
+      collection_key: row.collectionKey,
+      observed_at: TS,
+      source_reference: `sonar:canonical:${row.collectionKey}`,
+    }));
+    const proxies = rowRefs.map((refs, index) => ({
+      schema_version: 1 as const,
+      proxy: refs[0]!,
+      implementation: mintRef(
+        evmInput(MIBERA_CHAIN_ID, FRACTURED_ADDRESSES[index]!)
+      ),
+      proxy_standard: "eip1967",
+      observed_at: TS,
+      source_reference: `onchain:canonical:${registry[index]!.collectionKey}`,
+    }));
+    const assertions = registry.map((row, index) => ({
+      schema_version: 1 as const,
+      authority_ref: `operator:canonical:${row.collectionKey}`,
+      canonical_collection_key: row.collectionKey,
+      deployments: rowRefs[index]!,
+      approved_at: TS,
+      source_reference: `operator:canonical:${row.collectionKey}:source`,
+    }));
+    const forward = decodeBackfillEvidence({
+      schema_version: 1,
+      observations,
+      proxy_implementations: proxies,
+      operator_assertions: assertions,
+    });
+    const reorderedWithDuplicates = decodeBackfillEvidence({
+      schema_version: 1,
+      observations: [...observations].reverse().concat(observations[0]!),
+      proxy_implementations: [...proxies].reverse().concat(proxies[0]!),
+      operator_assertions: [...assertions].reverse().concat(assertions[0]!),
+    });
+
+    expect(reorderedWithDuplicates.observations).toEqual(forward.observations);
+    expect(reorderedWithDuplicates.proxy_implementations).toEqual(
+      forward.proxy_implementations
+    );
+    expect(reorderedWithDuplicates.operator_assertions).toEqual(
+      forward.operator_assertions
+    );
+    expect(reorderedWithDuplicates.evidence_digest.digest).toBe(
+      forward.evidence_digest.digest
+    );
+
+    const forwardPlan = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence: forward,
+      registry_observed_at: TS,
+    });
+    const reorderedPlan = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence: reorderedWithDuplicates,
+      registry_observed_at: TS,
+    });
+    expect(reorderedPlan.plan_digest.digest).toBe(forwardPlan.plan_digest.digest);
+  });
+
+  it("keys deployment digests by domain, major version, and digest bytes", () => {
+    const deployment = mintRef(evmInput(MIBERA_CHAIN_ID, MIBERA_CONTRACT));
+    const base = deployment.deployment_id;
+    const otherDomain: VersionedDigest = {
+      ...base,
+      domain: "future.collection.deployment",
+    };
+    const otherMajor: VersionedDigest = {
+      ...base,
+      major_version: base.major_version + 1,
+    };
+
+    expect(new Set([
+      versionedDigestKeyOf(base),
+      versionedDigestKeyOf(otherDomain),
+      versionedDigestKeyOf(otherMajor),
+    ]).size).toBe(3);
   });
 
   it("still quarantines overlapping operator assertions with different edge groupings", () => {

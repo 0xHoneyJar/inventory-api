@@ -278,7 +278,7 @@ export function proveLegacyNewParity(input: ReadParityInput): ReadParityReport {
   const activeByDeployment = new Map<string, (typeof activeRecords)[number][]>();
   for (const record of activeRecords) {
     for (const deployment of record.identity.deployments) {
-      const key = deployment.deployment_id.digest;
+      const key = versionedDigestKeyOf(deployment.deployment_id);
       const bucket = activeByDeployment.get(key) ?? [];
       bucket.push(record);
       activeByDeployment.set(key, bucket);
@@ -291,10 +291,11 @@ export function proveLegacyNewParity(input: ReadParityInput): ReadParityReport {
   for (const entry of input.registry) {
     for (const ref of registryDeploymentRefsOf(entry)) {
       checked += 1;
-      curatedDigests.add(ref.deployment_id.digest);
+      const deploymentKey = versionedDigestKeyOf(ref.deployment_id);
+      curatedDigests.add(deploymentKey);
 
       const legacy = legacyLookup(ref);
-      const holders = activeByDeployment.get(ref.deployment_id.digest) ?? [];
+      const holders = activeByDeployment.get(deploymentKey) ?? [];
 
       let outcome: ReadParityEntry["outcome"] = "match";
       let legacyProjection: unknown = { found: false };
@@ -447,7 +448,7 @@ export function proveLegacyNewParity(input: ReadParityInput): ReadParityReport {
   // does not assert (the legacy view could never answer it).
   for (const record of activeRecords) {
     for (const deployment of record.identity.deployments) {
-      if (!curatedDigests.has(deployment.deployment_id.digest)) {
+      if (!curatedDigests.has(versionedDigestKeyOf(deployment.deployment_id))) {
         mismatches.push({
           kind: "record_not_curated",
           deployment_id: deployment.deployment_id,

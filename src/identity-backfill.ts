@@ -371,6 +371,42 @@ function operatorAssertionEvidenceMaterial(assertion: OperatorEquivalenceAsserti
   };
 }
 
+function sonarObservationEvidenceMaterial(observation: SonarObservation) {
+  return observation.kind === "deployment"
+    ? {
+        kind: observation.kind,
+        deployment_id: observation.deployment.deployment_id,
+        collection_key: observation.collection_key,
+        observed_at: observation.observed_at,
+        source_reference: observation.source_reference,
+      }
+    : observation;
+}
+
+function proxyImplementationEvidenceMaterial(evidence: ProxyImplementationEvidence) {
+  return {
+    proxy_id: evidence.proxy.deployment_id,
+    implementation_id: evidence.implementation.deployment_id,
+    proxy_standard: evidence.proxy_standard,
+    observed_at: evidence.observed_at,
+    source_reference: evidence.source_reference,
+  };
+}
+
+/** Evidence arrays are semantic sets: normalize order and exact duplicates. */
+function canonicalEvidenceSet<A>(
+  values: readonly A[],
+  materialOf: (value: A) => unknown
+): readonly A[] {
+  const byMaterial = new Map<string, A>();
+  for (const value of values) {
+    byMaterial.set(JSON.stringify(materialOf(value)), value);
+  }
+  return [...byMaterial.entries()]
+    .sort(([left], [right]) => compareStrings(left, right))
+    .map(([, value]) => value);
+}
+
 const OperatorAssertionWireSchema = Schema.Struct({
   schema_version: Schema.optionalWith(Schema.Literal(1), { exact: true }),
   authority_ref: NonEmptyString,
@@ -412,7 +448,7 @@ export function decodeOperatorEquivalenceAssertion(
     decodeEmbeddedDeployment(`operator_assertion.deployments[${index}]`, deployment)
   );
   const byDigest = new Map(
-    deployments.map((deployment) => [deployment.deployment_id.digest, deployment])
+    deployments.map((deployment) => [digestKeyOf(deployment.deployment_id), deployment])
   );
   if (byDigest.size !== deployments.length) {
     throw new ValidationError(
@@ -491,29 +527,32 @@ export function decodeBackfillEvidence(input: unknown): BackfillEvidence {
     );
   }
 
-  const observations: SonarObservation[] = envelope.right.observations.map(
-    (observation, index) =>
-      observation.kind === "deployment"
-        ? {
-            kind: "deployment",
-            deployment: decodeEmbeddedDeployment(
-              `observations[${index}].deployment`,
-              observation.deployment
-            ),
-            collection_key: observation.collection_key,
-            observed_at: observation.observed_at,
-            source_reference: observation.source_reference,
-          }
-        : {
-            kind: "unidentified",
-            raw_reference: observation.raw_reference,
-            reason: observation.reason,
-            observed_at: observation.observed_at,
-            source_reference: observation.source_reference,
-          }
+  const observations = canonicalEvidenceSet<SonarObservation>(
+    envelope.right.observations.map(
+      (observation, index) =>
+        observation.kind === "deployment"
+          ? {
+              kind: "deployment",
+              deployment: decodeEmbeddedDeployment(
+                `observations[${index}].deployment`,
+                observation.deployment
+              ),
+              collection_key: observation.collection_key,
+              observed_at: observation.observed_at,
+              source_reference: observation.source_reference,
+            }
+          : {
+              kind: "unidentified",
+              raw_reference: observation.raw_reference,
+              reason: observation.reason,
+              observed_at: observation.observed_at,
+              source_reference: observation.source_reference,
+            }
+    ),
+    sonarObservationEvidenceMaterial
   );
 
-  const proxies: ProxyImplementationEvidence[] =
+  const proxies = canonicalEvidenceSet<ProxyImplementationEvidence>(
     envelope.right.proxy_implementations.map((evidence, index) => {
       const proxy = decodeEmbeddedDeployment(
         `proxy_implementations[${index}].proxy`,
@@ -523,7 +562,7 @@ export function decodeBackfillEvidence(input: unknown): BackfillEvidence {
         `proxy_implementations[${index}].implementation`,
         evidence.implementation
       );
-      if (proxy.deployment_id.digest === implementation.deployment_id.digest) {
+      if (digestKeyOf(proxy.deployment_id) === digestKeyOf(implementation.deployment_id)) {
         throw new ValidationError(
           `proxy_implementations[${index}]`,
           evidence,
@@ -537,35 +576,23 @@ export function decodeBackfillEvidence(input: unknown): BackfillEvidence {
         observed_at: evidence.observed_at,
         source_reference: evidence.source_reference,
       };
-    });
+    }),
+    proxyImplementationEvidenceMaterial
+  );
 
-  const assertions: OperatorEquivalenceAssertion[] =
+  const assertions = canonicalEvidenceSet<OperatorEquivalenceAssertion>(
     envelope.right.operator_assertions.map((assertion) =>
       decodeOperatorEquivalenceAssertion(assertion)
-    );
+    ),
+    operatorAssertionEvidenceMaterial
+  );
 
   const evidence_digest = mintDigest(
     BACKFILL_DIGEST_DOMAINS.evidence,
     BACKFILL_DIGEST_VERSION,
     {
-      observations: observations.map((observation) =>
-        observation.kind === "deployment"
-          ? {
-              kind: observation.kind,
-              deployment_id: observation.deployment.deployment_id,
-              collection_key: observation.collection_key,
-              observed_at: observation.observed_at,
-              source_reference: observation.source_reference,
-            }
-          : observation
-      ),
-      proxy_implementations: proxies.map((evidence) => ({
-        proxy_id: evidence.proxy.deployment_id,
-        implementation_id: evidence.implementation.deployment_id,
-        proxy_standard: evidence.proxy_standard,
-        observed_at: evidence.observed_at,
-        source_reference: evidence.source_reference,
-      })),
+      observations: observations.map(sonarObservationEvidenceMaterial),
+      proxy_implementations: proxies.map(proxyImplementationEvidenceMaterial),
       operator_assertions: assertions.map(operatorAssertionEvidenceMaterial),
     }
   );
@@ -903,7 +930,6 @@ export interface BackfillPlanInput {
 interface RowState {
   readonly entry: CollectionRegistryEntry;
   readonly refs: readonly CollectionDeploymentRef[];
-  readonly digestSet: ReadonlySet<string>;
   readonly confirmations: SonarDeploymentObservation[];
   readonly conflicts: SonarDeploymentObservation[];
   readonly proxyEvidence: ProxyImplementationEvidence[];
@@ -932,7 +958,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
 
   // Registry index (fail-closed on rows; refuses cross-row duplicates).
   const rows = new Map<string, RowState>();
-  const rowByDeploymentDigest = new Map<string, RowState>();
+  const rowByDeploymentKey = new Map<string, RowState>();
   for (const entry of input.registry) {
     if (rows.has(entry.collectionKey)) {
       throw new ValidationError(
@@ -945,7 +971,6 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     const state: RowState = {
       entry,
       refs,
-      digestSet: new Set(refs.map((ref) => ref.deployment_id.digest)),
       confirmations: [],
       conflicts: [],
       proxyEvidence: [],
@@ -954,7 +979,8 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
       quarantines: [],
     };
     for (const ref of refs) {
-      const existing = rowByDeploymentDigest.get(ref.deployment_id.digest);
+      const deploymentKey = digestKeyOf(ref.deployment_id);
+      const existing = rowByDeploymentKey.get(deploymentKey);
       if (existing) {
         throw new ValidationError(
           "registry",
@@ -963,7 +989,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
             `"${existing.entry.collectionKey}" and "${entry.collectionKey}" both assert it`
         );
       }
-      rowByDeploymentDigest.set(ref.deployment_id.digest, state);
+      rowByDeploymentKey.set(deploymentKey, state);
     }
     rows.set(entry.collectionKey, state);
   }
@@ -1004,12 +1030,12 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
       });
       continue;
     }
-    const row = rowByDeploymentDigest.get(observation.deployment.deployment_id.digest);
+    const observationKey = digestKeyOf(observation.deployment.deployment_id);
+    const row = rowByDeploymentKey.get(observationKey);
     if (!row) {
-      const key = observation.deployment.deployment_id.digest;
-      const bucket = uncuratedObservations.get(key) ?? [];
+      const bucket = uncuratedObservations.get(observationKey) ?? [];
       bucket.push(observation);
-      uncuratedObservations.set(key, bucket);
+      uncuratedObservations.set(observationKey, bucket);
       continue;
     }
     if (observation.collection_key === row.entry.collectionKey) {
@@ -1037,18 +1063,19 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
   // Compare the current batch against prior bindings persisted on active
   // records. Absence of new evidence never means "unchanged"; only an
   // explicit later binding that disagrees with a prior one quarantines.
-  const proxyByDigest = new Map<string, ProxyImplementationEvidence[]>();
+  const proxyByDeploymentKey = new Map<string, ProxyImplementationEvidence[]>();
   for (const evidence of input.evidence.proxy_implementations) {
-    const key = evidence.proxy.deployment_id.digest;
-    const bucket = proxyByDigest.get(key) ?? [];
+    const key = digestKeyOf(evidence.proxy.deployment_id);
+    const bucket = proxyByDeploymentKey.get(key) ?? [];
     bucket.push(evidence);
-    proxyByDigest.set(key, bucket);
+    proxyByDeploymentKey.set(key, bucket);
   }
-  for (const bucket of proxyByDigest.values()) {
+  for (const bucket of proxyByDeploymentKey.values()) {
     const first = bucket[0]!;
-    const row = rowByDeploymentDigest.get(first.proxy.deployment_id.digest);
+    const proxyKey = digestKeyOf(first.proxy.deployment_id);
+    const row = rowByDeploymentKey.get(proxyKey);
     const batchImplementations = uniqueSorted(
-      bucket.map((evidence) => evidence.implementation.deployment_id.digest)
+      bucket.map((evidence) => digestKeyOf(evidence.implementation.deployment_id))
     );
     if (!row) {
       evidenceItems.push({
@@ -1066,8 +1093,8 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     const active = activeByKey.get(row.entry.collectionKey);
     const priorImplDigests = uniqueSorted(
       (active?.proxy_implementations ?? [])
-        .filter((binding) => binding.proxy_id.digest === first.proxy.deployment_id.digest)
-        .map((binding) => binding.implementation_id.digest)
+        .filter((binding) => digestKeyOf(binding.proxy_id) === proxyKey)
+        .map((binding) => digestKeyOf(binding.implementation_id))
     );
     const combined = uniqueSorted([...batchImplementations, ...priorImplDigests]);
     if (combined.length > 1) {
@@ -1123,7 +1150,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
   for (const group of assertionGroups) {
     const assertion = group.assertions[0]!;
     for (const deployment of assertion.deployments) {
-      const key = deployment.deployment_id.digest;
+      const key = digestKeyOf(deployment.deployment_id);
       const edges = claimedEdgesByDeployment.get(key) ?? new Set<string>();
       edges.add(group.edgeKey);
       claimedEdgesByDeployment.set(key, edges);
@@ -1156,7 +1183,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
       // the assertion itself is also surfaced as an evidence-scoped item so
       // the report names the ambiguous grouping explicitly.
       for (const deployment of assertion.deployments) {
-        const row = rowByDeploymentDigest.get(deployment.deployment_id.digest);
+        const row = rowByDeploymentKey.get(digestKeyOf(deployment.deployment_id));
         if (row && !row.quarantines.some((q) => q.reason === "conflicting_operator_assertions")) {
           row.quarantines.push({
             reason: "conflicting_operator_assertions",
@@ -1184,7 +1211,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     const memberRows = new Set<RowState>();
     const uncurated: CollectionDeploymentRef[] = [];
     for (const deployment of assertion.deployments) {
-      const row = rowByDeploymentDigest.get(deployment.deployment_id.digest);
+      const row = rowByDeploymentKey.get(digestKeyOf(deployment.deployment_id));
       if (row) {
         memberRows.add(row);
       } else {
@@ -1208,7 +1235,8 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
 
     const rowsCoveredWholly = [...memberRows].every((row) =>
       row.refs.every((ref) => assertion.deployments.some(
-        (deployment) => deployment.deployment_id.digest === ref.deployment_id.digest
+        (deployment) =>
+          digestKeyOf(deployment.deployment_id) === digestKeyOf(ref.deployment_id)
       ))
     );
     if (!rowsCoveredWholly) {
@@ -1353,7 +1381,10 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
       (l, r) =>
         compareStrings(l.observed_at, r.observed_at) ||
         compareStrings(l.source_reference, r.source_reference) ||
-        compareStrings(l.deployment.deployment_id.digest, r.deployment.deployment_id.digest)
+        compareStrings(
+          digestKeyOf(l.deployment.deployment_id),
+          digestKeyOf(r.deployment.deployment_id)
+        )
     );
     const sonarProvenance = mergeProvenanceEntries(
       priorNonProxyProvenance.filter((entry) => entry.source === "sonar_probe"),
@@ -1382,7 +1413,11 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     const priorBindings = active?.proxy_implementations ?? [];
     const bindingByKey = new Map<string, RecordedProxyImplementation>();
     for (const binding of priorBindings) {
-      const key = `${binding.proxy_id.digest}:${binding.implementation_id.digest}:${binding.source_reference}`;
+      const key = JSON.stringify([
+        digestKeyOf(binding.proxy_id),
+        digestKeyOf(binding.implementation_id),
+        binding.source_reference,
+      ]);
       bindingByKey.set(key, binding);
     }
     for (const evidence of proxyEvidence) {
@@ -1393,7 +1428,11 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
         source_reference: evidence.source_reference,
         observed_at: evidence.observed_at,
       };
-      const key = `${recorded.proxy_id.digest}:${recorded.implementation_id.digest}:${recorded.source_reference}`;
+      const key = JSON.stringify([
+        digestKeyOf(recorded.proxy_id),
+        digestKeyOf(recorded.implementation_id),
+        recorded.source_reference,
+      ]);
       bindingByKey.set(key, recorded);
     }
     const proxy_implementations = [...bindingByKey.values()].sort(

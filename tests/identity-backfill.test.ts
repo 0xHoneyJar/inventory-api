@@ -471,6 +471,154 @@ describe("CR-108 planner: EVM / Solana / quarantine / blocked", () => {
     ).toBe(true);
   });
 
+  it("coalesces corroborating approvals of the same edge and retains each provenance", () => {
+    const registry = subsetRegistry("mibera");
+    const ref = registryDeploymentRefsOf(registry[0]!)[0]!;
+    const evidence = decodeBackfillEvidence({
+      schema_version: 1,
+      observations: [],
+      proxy_implementations: [],
+      operator_assertions: [
+        {
+          schema_version: 1,
+          authority_ref: "operator:ratify-mibera/001",
+          canonical_collection_key: "mibera",
+          deployments: [ref],
+          approved_at: TS,
+          source_reference: "operator:ratify-mibera/source-a",
+        },
+        {
+          schema_version: 1,
+          authority_ref: "operator:ratify-mibera/002",
+          canonical_collection_key: "mibera",
+          deployments: [ref],
+          approved_at: "2026-07-16T01:00:00.000Z",
+          source_reference: "operator:ratify-mibera/source-b",
+        },
+      ],
+    });
+
+    const plan = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence,
+      registry_observed_at: TS,
+    });
+
+    expect(plan.counts.create).toBe(1);
+    expect(plan.counts.quarantine).toBe(0);
+    const operatorProvenance = plan.items[0]!.proposed!.provenance.filter(
+      (entry) => entry.source === "operator_ratified"
+    );
+    expect(operatorProvenance).toHaveLength(2);
+    expect(operatorProvenance.map((entry) => entry.source_reference)).toEqual([
+      "operator:ratify-mibera/001",
+      "operator:ratify-mibera/002",
+    ]);
+  });
+
+  it("still quarantines overlapping operator assertions with different edge groupings", () => {
+    const registry = subsetRegistry("mibera", "mst");
+    const miberaRef = registryDeploymentRefsOf(registry[0]!)[0]!;
+    const allRefs = registry.flatMap((row) => registryDeploymentRefsOf(row));
+    const evidence = decodeBackfillEvidence({
+      schema_version: 1,
+      observations: [],
+      proxy_implementations: [],
+      operator_assertions: [
+        {
+          schema_version: 1,
+          authority_ref: "operator:mibera-only/001",
+          canonical_collection_key: "mibera",
+          deployments: [miberaRef],
+          approved_at: TS,
+          source_reference: "operator:mibera-only",
+        },
+        {
+          schema_version: 1,
+          authority_ref: "operator:mibera-mst/001",
+          canonical_collection_key: "mibera",
+          deployments: allRefs,
+          approved_at: TS,
+          source_reference: "operator:mibera-mst",
+        },
+      ],
+    });
+
+    const plan = planIdentityBackfill({
+      registry,
+      current_records: [],
+      evidence,
+      registry_observed_at: TS,
+    });
+
+    expect(plan.counts.quarantine).toBeGreaterThan(0);
+    expect(
+      plan.items.some((item) => item.reason_code === "conflicting_operator_assertions")
+    ).toBe(true);
+  });
+
+  it("preserves prior operator and Sonar provenance when a later batch omits it", () => {
+    const registry = subsetRegistry("mibera");
+    const ref = registryDeploymentRefsOf(registry[0]!)[0]!;
+    const evidence = decodeBackfillEvidence({
+      schema_version: 1,
+      observations: [
+        {
+          schema_version: 1,
+          kind: "deployment",
+          deployment: ref,
+          collection_key: "mibera",
+          observed_at: TS,
+          source_reference: "sonar:mibera-confirmation",
+        },
+      ],
+      proxy_implementations: [],
+      operator_assertions: [
+        {
+          schema_version: 1,
+          authority_ref: "operator:ratify-mibera/monotonic",
+          canonical_collection_key: "mibera",
+          deployments: [ref],
+          approved_at: TS,
+          source_reference: "operator:ratify-mibera/monotonic-source",
+        },
+      ],
+    });
+    let ledger = createBackfillLedger();
+    const initial = planIdentityBackfill({
+      registry,
+      current_records: ledger.records,
+      evidence,
+      registry_observed_at: TS,
+    });
+    ledger = applyBackfillPlan(ledger, initial, {
+      applied_at: TS,
+      command_id: "cmd:preserve-non-proxy-provenance",
+      expected_state_digest: ledger.state_digest,
+    });
+
+    const later = planIdentityBackfill({
+      registry,
+      current_records: ledger.records,
+      evidence: emptyEvidence(),
+      registry_observed_at: TS,
+    });
+
+    expect(later.counts.noop).toBe(1);
+    expect(later.counts.update).toBe(0);
+    expect(later.items[0]!.evidence_refs).toEqual(
+      expect.arrayContaining([
+        "operator:ratify-mibera/monotonic",
+        "sonar:mibera-confirmation",
+      ])
+    );
+    const active = ledger.records.find((record) => record.status === "active")!;
+    expect(active.provenance.map((entry) => entry.source)).toEqual(
+      expect.arrayContaining(["operator_ratified", "sonar_probe"])
+    );
+  });
+
   it("operator evidence digest binds approval audit fields and replays deterministically", () => {
     const registry = subsetRegistry("mibera");
     const ref = registryDeploymentRefsOf(registry[0]!)[0]!;

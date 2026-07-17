@@ -184,6 +184,15 @@ function uniqueSorted(values: readonly string[]): readonly string[] {
   return [...new Set(values)].sort(compareStrings);
 }
 
+/** Canonical semantic identity of one approved equivalence edge. */
+function operatorEdgeKey(assertion: OperatorEquivalenceAssertion): string {
+  return JSON.stringify([
+    assertion.canonical_collection_key,
+    sortDigests(assertion.deployments.map((deployment) => deployment.deployment_id))
+      .map(digestKeyOf),
+  ]);
+}
+
 /** Validate a caller-supplied UTC Z-suffixed ISO-8601 timestamp. */
 export function assertIsoUtcTimestamp(value: string, field: string): string {
   const decoded = Schema.decodeUnknownEither(IsoUtcTimestamp)(value);
@@ -853,6 +862,31 @@ function mintProvenance(
   return decoded.right;
 }
 
+function provenanceEntryKey(entry: Provenance): string {
+  return JSON.stringify([
+    entry.source,
+    entry.source_reference,
+    entry.observed_at,
+    digestKeyOf(entry.evidence_digest),
+  ]);
+}
+
+/**
+ * Provenance is monotonic across evidence batches. An omitted observation is
+ * not evidence that a prior operator approval or Sonar confirmation vanished.
+ */
+function mergeProvenanceEntries(
+  ...groups: readonly (readonly Provenance[])[]
+): readonly Provenance[] {
+  const byKey = new Map<string, Provenance>();
+  for (const entry of groups.flat()) {
+    byKey.set(provenanceEntryKey(entry), entry);
+  }
+  return [...byKey.values()].sort((l, r) =>
+    compareStrings(provenanceEntryKey(l), provenanceEntryKey(r))
+  );
+}
+
 // ── Planner ──────────────────────────────────────────────────────────────────
 
 export interface BackfillPlanInput {
@@ -874,7 +908,7 @@ interface RowState {
   readonly conflicts: SonarDeploymentObservation[];
   readonly proxyEvidence: ProxyImplementationEvidence[];
   readonly proxyChanged: ProxyImplementationEvidence[][];
-  ratifiedBy: OperatorEquivalenceAssertion | undefined;
+  readonly ratifications: OperatorEquivalenceAssertion[];
   readonly quarantines: {
     reason: BackfillReasonCode;
     detail: string;
@@ -916,7 +950,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
       conflicts: [],
       proxyEvidence: [],
       proxyChanged: [],
-      ratifiedBy: undefined,
+      ratifications: [],
       quarantines: [],
     };
     for (const ref of refs) {
@@ -1053,32 +1087,62 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     compareStrings(l.authority_ref, r.authority_ref)
   );
 
-  // Deployment → claiming assertions (differing edges on one deployment conflict).
-  const claims = new Map<string, OperatorEquivalenceAssertion[]>();
+  // Coalesce independently approved assertions of the same canonical edge.
+  // Corroboration is retained as provenance; only distinct semantic groupings
+  // that claim the same deployment conflict.
+  const groupsByEdge = new Map<string, OperatorEquivalenceAssertion[]>();
   for (const assertion of assertions) {
+    const edgeKey = operatorEdgeKey(assertion);
+    const bucket = groupsByEdge.get(edgeKey) ?? [];
+    bucket.push(assertion);
+    groupsByEdge.set(edgeKey, bucket);
+  }
+  const assertionGroups = [...groupsByEdge.entries()]
+    .map(([edgeKey, groupAssertions]) => ({
+      edgeKey,
+      assertions: [...groupAssertions].sort(
+        (l, r) =>
+          compareStrings(l.authority_ref, r.authority_ref) ||
+          compareStrings(l.source_reference, r.source_reference) ||
+          compareStrings(l.approved_at, r.approved_at) ||
+          compareStrings(l.assertion_digest.digest, r.assertion_digest.digest)
+      ),
+    }))
+    .sort((l, r) => compareStrings(l.edgeKey, r.edgeKey));
+
+  const claimedEdgesByDeployment = new Map<string, Set<string>>();
+  for (const group of assertionGroups) {
+    const assertion = group.assertions[0]!;
     for (const deployment of assertion.deployments) {
       const key = deployment.deployment_id.digest;
-      const bucket = claims.get(key) ?? [];
-      bucket.push(assertion);
-      claims.set(key, bucket);
+      const edges = claimedEdgesByDeployment.get(key) ?? new Set<string>();
+      edges.add(group.edgeKey);
+      claimedEdgesByDeployment.set(key, edges);
     }
   }
-  const conflictingAssertionDigests = new Set<string>();
-  for (const bucket of claims.values()) {
-    if (bucket.length > 1) {
-      for (const assertion of bucket) {
-        conflictingAssertionDigests.add(assertion.assertion_digest.digest);
-      }
+  const conflictingEdgeKeys = new Set<string>();
+  for (const edgeKeys of claimedEdgesByDeployment.values()) {
+    if (edgeKeys.size > 1) {
+      for (const edgeKey of edgeKeys) conflictingEdgeKeys.add(edgeKey);
     }
   }
 
-  for (const assertion of assertions) {
-    const assertionRefs = uniqueSorted([assertion.source_reference, assertion.authority_ref]);
+  for (const group of assertionGroups) {
+    const assertion = group.assertions[0]!;
+    const assertionRefs = uniqueSorted(
+      group.assertions.flatMap((approval) => [
+        approval.source_reference,
+        approval.authority_ref,
+      ])
+    );
+    const authorityRefs = uniqueSorted(
+      group.assertions.map((approval) => approval.authority_ref)
+    );
     const assertionIds = assertion.deployments.map(
       (deployment) => deployment.deployment_id
     );
 
-    if (conflictingAssertionDigests.has(assertion.assertion_digest.digest)) {
+    if (conflictingEdgeKeys.has(group.edgeKey)) {
       // Quarantine every curated row the conflicting edges touch, once below;
       // the assertion itself is also surfaced as an evidence-scoped item so
       // the report names the ambiguous grouping explicitly.
@@ -1099,8 +1163,9 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
         action: "quarantine",
         reason_code: "conflicting_operator_assertions",
         detail:
-          `operator assertion ${assertion.authority_ref} overlaps another assertion on at ` +
-          `least one deployment; conflicting operator edges quarantine instead of ranking`,
+          `operator assertion edge approved by [${authorityRefs.join(", ")}] overlaps a ` +
+          `different assertion edge on at least one deployment; conflicting operator ` +
+          `groupings quarantine instead of ranking`,
         affected_deployment_ids: sortDigests(assertionIds),
         evidence_refs: assertionRefs,
       });
@@ -1170,9 +1235,10 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
 
     if (memberRows.size === 1) {
       // Exact whole-row ratification: operator authority CONFIRMS curation —
-      // recorded as provenance; resolves that row's observed/proxy conflicts.
+      // every corroborating approval is recorded as provenance; resolves that
+      // row's observed/proxy conflicts.
       const [row] = memberRows;
-      row!.ratifiedBy = assertion;
+      row!.ratifications.push(...group.assertions);
       continue;
     }
 
@@ -1201,7 +1267,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     const rowIds = sortDigests(row.refs.map((ref) => ref.deployment_id));
 
     const quarantines = [...row.quarantines];
-    if (row.conflicts.length > 0 && row.ratifiedBy === undefined) {
+    if (row.conflicts.length > 0 && row.ratifications.length === 0) {
       const observedKeys = uniqueSorted(row.conflicts.map((o) => o.collection_key));
       quarantines.push({
         reason: "observed_collection_key_conflict",
@@ -1212,7 +1278,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
         refs: uniqueSorted(row.conflicts.map((o) => o.source_reference)),
       });
     }
-    if (row.proxyChanged.length > 0 && row.ratifiedBy === undefined) {
+    if (row.proxyChanged.length > 0 && row.ratifications.length === 0) {
       const refs = uniqueSorted(
         row.proxyChanged.flat().map((evidence) => evidence.source_reference)
       );
@@ -1244,28 +1310,35 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     }
 
     // Provenance in source-precedence order: operator → curated → observed → onchain.
-    const provenance: Provenance[] = [];
-    if (row.ratifiedBy !== undefined) {
-      provenance.push(
+    const rowIdentity = mintRegistryRowIdentity(entry);
+    const identityMaterialUnchanged =
+      active !== undefined &&
+      active.identity.collection_id.digest === rowIdentity.identity.collection_id.digest &&
+      active.collection_key === entry.collectionKey;
+    const priorNonProxyProvenance = identityMaterialUnchanged
+      ? active.provenance
+      : [];
+    const operatorProvenance = mergeProvenanceEntries(
+      priorNonProxyProvenance.filter(
+        (entry) => entry.source === "operator_ratified"
+      ),
+      row.ratifications.map((ratification) =>
         mintProvenance(
           "operator_ratified",
-          row.ratifiedBy.authority_ref,
-          row.ratifiedBy.approved_at,
-          { assertion_digest: row.ratifiedBy.assertion_digest }
+          ratification.authority_ref,
+          ratification.approved_at,
+          { assertion_digest: ratification.assertion_digest }
         )
-      );
-    }
-    const rowIdentity = mintRegistryRowIdentity(entry);
-    provenance.push(
-      mintProvenance(
-        "inventory_registry",
-        `inventory-registry:${entry.collectionKey}`,
-        registryObservedAt,
-        {
-          collection_key: entry.collectionKey,
-          deployment_ids: rowIds,
-        }
       )
+    );
+    const registryProvenance = mintProvenance(
+      "inventory_registry",
+      `inventory-registry:${entry.collectionKey}`,
+      registryObservedAt,
+      {
+        collection_key: entry.collectionKey,
+        deployment_ids: rowIds,
+      }
     );
     const confirmations = [...row.confirmations].sort(
       (l, r) =>
@@ -1273,14 +1346,20 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
         compareStrings(l.source_reference, r.source_reference) ||
         compareStrings(l.deployment.deployment_id.digest, r.deployment.deployment_id.digest)
     );
-    for (const observation of confirmations) {
-      provenance.push(
+    const sonarProvenance = mergeProvenanceEntries(
+      priorNonProxyProvenance.filter((entry) => entry.source === "sonar_probe"),
+      confirmations.map((observation) =>
         mintProvenance("sonar_probe", observation.source_reference, observation.observed_at, {
           deployment_id: observation.deployment.deployment_id,
           collection_key: observation.collection_key,
         })
-      );
-    }
+      )
+    );
+    const provenance: Provenance[] = [
+      ...operatorProvenance,
+      registryProvenance,
+      ...sonarProvenance,
+    ];
     const proxyEvidence = [...row.proxyEvidence].sort(
       (l, r) =>
         compareStrings(l.observed_at, r.observed_at) ||
@@ -1325,12 +1404,15 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
     }
 
     const evidenceRefs = uniqueSorted([
-      `inventory-registry:${entry.collectionKey}`,
-      ...(row.ratifiedBy !== undefined
-        ? [row.ratifiedBy.authority_ref, row.ratifiedBy.source_reference]
-        : []),
-      ...confirmations.map((o) => o.source_reference),
-      ...proxy_implementations.map((e) => e.source_reference),
+      ...provenance
+        .map((entry) => entry.source_reference)
+        .filter((reference): reference is string => reference !== undefined),
+      ...row.ratifications.flatMap((ratification) => [
+        ratification.authority_ref,
+        ratification.source_reference,
+      ]),
+      ...confirmations.map((observation) => observation.source_reference),
+      ...proxy_implementations.map((binding) => binding.source_reference),
     ]);
 
     if (active === undefined) {
@@ -1359,9 +1441,7 @@ export function planIdentityBackfill(input: BackfillPlanInput): BackfillPlan {
       continue;
     }
 
-    const identityChanged =
-      active.identity.collection_id.digest !== rowIdentity.identity.collection_id.digest ||
-      active.collection_key !== entry.collectionKey;
+    const identityChanged = !identityMaterialUnchanged;
     const provenanceChanged =
       JSON.stringify(active.provenance) !== JSON.stringify(provenance) ||
       JSON.stringify(active.proxy_implementations) !== JSON.stringify(proxy_implementations);

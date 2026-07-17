@@ -604,10 +604,12 @@ function buildExactDeploymentIndex(
     const collection = snapshotCollection(entry);
     for (const ref of refs) {
       const key = ref.deployment_id.digest;
-      if (index.has(key)) {
+      const existing = index.get(key);
+      if (existing) {
         throw new Error(
           `collection registry asserts deployment ${ref.network.network_namespace}:` +
-            `${ref.network.network_reference}:${ref.normalized_address} in two rows — ` +
+            `${ref.network.network_reference}:${ref.normalized_address} in both ` +
+            `${existing.collection.collection_key} and ${entry.collectionKey} — ` +
             `exact lookup would be ambiguous. Fix the registry before serving identity from it.`
         );
       }

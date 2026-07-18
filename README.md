@@ -50,6 +50,26 @@ The Hyper framework is **source-distributed** under `src/hyper/` (vendored via
 tracked in `hyper.lock.json`). The domain functions stay importable internally
 via `index.ts` for the route handlers + tests.
 
+### Topology — which host serves what (#25)
+
+| Surface | Host | Audience |
+|---------|------|----------|
+| **HTTP (canonical)** | `https://inventory.0xhoneyjar.xyz` → Railway service `inventory-api` | dashboards, hovercards, honeyroad UI, any HTTP consumer |
+| MCP / agent | same host — `POST /mcp` + `GET /.well-known/mcp.json` (`src/app.ts`) | agents; one service serves both surfaces |
+
+> Note: `inventory-mcp-production.up.railway.app` (cited in #25's consumer report) is **not
+> ours** — no such service exists in the workspace; the URL was pattern-guessed and answers
+> from an unrelated Railway app. Do not document or depend on it.
+
+The service deploys on **Railway** (`railway.toml`, Dockerfile, `bun src/app.ts`,
+healthcheck `/health`). There is **no Vercel deployment** — the apex domain is a
+Route53 CNAME to the Railway service. If the apex ever returns a Vercel error
+page (`DEPLOYMENT_NOT_FOUND`), DNS has drifted back to a stale `cname.vercel-dns.com`
+record: repoint the CNAME at the Railway domain (see issue #25).
+
+Consumer smoke: `scripts/smoke-25.sh [--base URL]` — checks `/health`,
+`/.well-known/beacon.json`, and the `getNftsForOwner` shape against the apex.
+
 ## Modes
 
 - **Hermetic (default):** reads bundled fixtures — the test suite runs fully offline (`npm test`).

@@ -675,8 +675,14 @@ describe("exact-enrichment (CR-105): registry rows are CR-001-validated at index
 });
 
 describe("exact-enrichment (CR-105): existing EVM and SVM rows stay compatible", () => {
-  it("reaches every registry row through every one of its exact deployments", () => {
+  it("reaches every on-chain registry row through every one of its exact deployments", () => {
     for (const entry of listCollectionRegistry()) {
+      // Off-chain badge factories have no deployment identity until mint.
+      if (entry.metadataStrategy.kind === "badge-grant") {
+        expect(rowInputs(entry)).toEqual([]);
+        expect(registryDeploymentRefsOf(entry)).toEqual([]);
+        continue;
+      }
       const inputs = rowInputs(entry);
       expect(inputs.length).toBeGreaterThan(0);
       for (const input of inputs) {
@@ -696,6 +702,7 @@ describe("exact-enrichment (CR-105): existing EVM and SVM rows stay compatible",
 
   it("derives per-VM network references without one shared numeric chain-id shape", () => {
     for (const entry of listCollectionRegistry()) {
+      if (entry.metadataStrategy.kind === "badge-grant") continue;
       if (entry.chain === "evm") {
         const hit = expectHit(
           lookupExactDeployment(evmInput(entry.chainId, entry.evmContracts![0]!))

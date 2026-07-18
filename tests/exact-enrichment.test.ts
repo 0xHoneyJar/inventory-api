@@ -535,6 +535,7 @@ describe("exact-enrichment (CR-105): equivalence evidence is exact CR-001 Equiva
 
   it("every emitted basis strict-decodes through CR-001 and assembles a valid CR-001 identity", () => {
     for (const entry of listCollectionRegistry()) {
+      if (entry.metadataStrategy.kind === "badge-grant") continue;
       const hit = expectHit(lookupExactDeployment(rowInputs(entry)[0]!));
       const { basis, deployments, assertion_ref } = hit.equivalence;
 
@@ -606,6 +607,10 @@ describe("exact-enrichment (CR-105): registry rows are CR-001-validated at index
   it("validates real registry rows through the protocol package (all pass)", () => {
     for (const entry of listCollectionRegistry()) {
       const refs = registryDeploymentRefsOf(entry);
+      if (entry.metadataStrategy.kind === "badge-grant") {
+        expect(refs).toEqual([]);
+        continue;
+      }
       expect(refs.length).toBeGreaterThan(0);
       for (const ref of refs) {
         expect(

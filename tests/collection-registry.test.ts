@@ -17,6 +17,7 @@ import {
   AZUKI_CHAIN_ID,
   AZUKI_COLLECTION_KEY,
   FRACTURED_ADDRESSES,
+  MIBERA_BADGES_COLLECTION_ID,
   type CollectionRegistryEntry,
 } from "../src/collection-registry.js";
 import { sovereignMetadataUrl } from "../src/sovereign-metadata.js";
@@ -254,5 +255,15 @@ describe("collection-registry v2", () => {
       rehost_policy: "mirror", // claims mirror rights while actually pointing at third-party art
     };
     expect(() => assertRehostPolicyInvariant([lying])).toThrow(/does not mirror-host/);
+  });
+
+  it("registers mibera-badges factory (badge-grant, no EVM contract)", () => {
+    const entry = resolveCollectionRouteParam("mibera-badges");
+    expect(entry?.id).toBe(MIBERA_BADGES_COLLECTION_ID);
+    expect(entry?.metadataStrategy).toEqual({ kind: "badge-grant" });
+    expect(entry?.evmContracts).toBeUndefined();
+    expect(resolveCollectionRouteParam("mibera-badge")?.collectionKey).toBe(
+      "mibera-badges",
+    );
   });
 });

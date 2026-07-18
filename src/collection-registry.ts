@@ -24,6 +24,11 @@ export type MetadataStrategy =
   // reads Helius DAS; inventory only consumes what it publishes, per the
   // belt model (closer-to-raw publishes, closer-to-meaning consumes).
   | { kind: "sonar-image" }
+  // Off-chain badge factory (br-badges-as-inventory-bzi.1) — federates
+  // activities-api grant authority into Alchemy/SimpleHash-class NFT rows.
+  // No EVM contract until mint-api + Sonar graduate the factory on-chain
+  // (`evmContracts` omitted; route id is the alias, e.g. `mibera-badges`).
+  | { kind: "badge-grant" }
   // NO WORKING METADATA SOURCE — declared, not pretended (INV-A).
   //
   // A row lands here when we cannot mirror the art (no rights) AND cannot point
@@ -161,6 +166,10 @@ export const PURUPURU_CONTRACT = "0x6CfB9280767a3596Ee6af887D900014a755ffc75";
 /** Azuki — third-party (proxy). EVM on Ethereum mainnet (1). INV-A. */
 export const AZUKI_CONTRACT = "0xED5AF388653567Af2F388E6224dC7C4b3241C544";
 export const AZUKI_CHAIN_ID = 1;
+
+/** Off-chain badge factory alias — address null until mint-api lands. */
+export const MIBERA_BADGES_COLLECTION_ID = "mibera-badges";
+export const MIBERA_BADGES_COLLECTION_KEY = "mibera-badges";
 // Verified against sonar's src/handlers/tracked-erc721/constants.ts on
 // origin/main (2026-07-13) — the local sonar-api checkout was stale and
 // showed an older doc revision; grounded against origin/main, not the
@@ -385,6 +394,26 @@ const COLLECTION_REGISTRY: CollectionRegistryEntry[] = [
     // rehost_policy intentionally omitted — proves the "proxy" DEFAULT
     // (effectiveRehostPolicy) rather than setting it explicitly. We do not
     // hold rights to Azuki's art; see src/tokenuri-metadata.ts.
+  },
+  // Badge factory — off-chain grants first (activities-api), on-chain later
+  // (mint-api + Sonar). No evmContracts until the factory address exists;
+  // route id / alias is `mibera-badges` (dashboard Kitchen sibling card).
+  {
+    id: MIBERA_BADGES_COLLECTION_ID,
+    chain: "evm",
+    chainId: MIBERA_CHAIN_ID,
+    collectionKey: MIBERA_BADGES_COLLECTION_KEY,
+    worldSlug: "mibera",
+    metadataSlug: "badges",
+    name: "Mibera Badges",
+    symbol: "BADGE",
+    totalSupply: 0,
+    aliases: [MIBERA_BADGES_COLLECTION_KEY, "mibera-badge"],
+    metadataStrategy: { kind: "badge-grant" },
+    external: false,
+    enabled: true,
+    // Art lives on assets.0xhoneyjar.xyz (we hold rights); federation points
+    // at the grant URI rather than re-hosting — proxy posture is correct.
   },
 ];
 

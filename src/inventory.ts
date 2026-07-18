@@ -40,8 +40,13 @@ import {
   MIBERA_CHAIN_ID,
   MIBERA_COLLECTION_KEY,
   CANDIES_CONTRACT,
+  type CollectionRegistryEntry,
   type ExternalCollection,
 } from "./collection-registry.js";
+import {
+  earnedBadgeToNFT,
+  fetchEarnedBadgesForWallet,
+} from "./activities-badges.js";
 import type {
   HoldingsResponse,
   ContractHolding,
@@ -479,11 +484,57 @@ async function getExternalNftsForOwner(
   };
 }
 
+/**
+ * Off-chain badge factory owner-list (br-badges-as-inventory-bzi.1).
+ * Federates activities-api grants into NFTCollection shape so consumers
+ * (dashboard drawer, mibera-dimensions blotters) stop dual-fetching.
+ */
+async function getBadgeNftsForOwner(
+  address: string,
+  entry: CollectionRegistryEntry,
+  options: GetNftsForOwnerOptions = {},
+): Promise<NFTCollection> {
+  const checksummedAddress = validateEvmAddress(address, "address");
+  const badges = await fetchEarnedBadgesForWallet(checksummedAddress);
+  let nfts = badges.map(earnedBadgeToNFT);
+
+  if (options.sortTokenIds === "ascending") {
+    nfts = [...nfts].sort((a, b) =>
+      a.tokenId < b.tokenId ? -1 : a.tokenId > b.tokenId ? 1 : 0,
+    );
+  }
+
+  const { page, nextPageKey } = applyPagination(
+    nfts,
+    options.pageSize ?? 100,
+    options.pageKey,
+  );
+
+  return {
+    contractAddress: entry.id,
+    name: entry.name,
+    symbol: entry.symbol,
+    totalSupply: entry.totalSupply,
+    nfts: page,
+    pageKey: nextPageKey,
+  };
+}
+
 export async function getNftsForOwner(
   address: string,
   contract: string,
   options: GetNftsForOwnerOptions = {}
 ): Promise<NFTCollection> {
+  // Badge factories route by alias (e.g. `mibera-badges`), not an 0x contract —
+  // resolve before EVM validation so the param is never rejected as malformed.
+  const badgeEntry = resolveCollectionRouteParam(contract);
+  if (
+    badgeEntry?.enabled &&
+    badgeEntry.metadataStrategy.kind === "badge-grant"
+  ) {
+    return getBadgeNftsForOwner(address, badgeEntry, options);
+  }
+
   const external = resolveExternalCollection(contract);
   if (external) {
     return getExternalNftsForOwner(address, external, options);
@@ -539,12 +590,12 @@ export async function getNftsForOwner(
   if (
     strategy.kind === "tokenuri" ||
     strategy.kind === "unresolved" ||
-    strategy.kind === "sonar-image"
+    strategy.kind === "sonar-image" ||
+    strategy.kind === "badge-grant"
   ) {
-    // Unreachable today: every registered "tokenuri" (Azuki) / "unresolved" /
-    // "sonar-image" (Pythenians) row is external, handled by
-    // getExternalNftsForOwner before this function is reached. Guard rather
-    // than silently fall through to the sovereign URL shape.
+    // Unreachable today: tokenuri/sonar-image are external; badge-grant is
+    // handled before EVM validation above. Guard rather than fall through
+    // to the sovereign URL shape.
     throw new Error(
       `registry row ${entry.id} declares metadataStrategy "${strategy.kind}", unsupported by ` +
         `getNftsForOwner's registered-collection path (external path only)`

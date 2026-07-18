@@ -286,6 +286,13 @@ function rowLoadError(entry: CollectionRegistryEntry, detail: string): Error {
 function entryDeploymentInputs(
   entry: CollectionRegistryEntry
 ): readonly CollectionDeploymentInput[] {
+  // Off-chain badge factories (br-badges-as-inventory-bzi.1) have no contract
+  // until mint-api lands — they contribute ZERO deployment refs, not a load
+  // failure. Exact enrichment is for on-chain collection identity only.
+  if (entry.metadataStrategy.kind === "badge-grant") {
+    return [];
+  }
+
   if (entry.chain === "evm") {
     // Safe-integer gate BEFORE decimal derivation: String() of an unsafe
     // integer (e.g. 9007199254740993) yields a silently-wrong but
@@ -553,6 +560,8 @@ function buildExactDeploymentIndex(
   const index = new Map<string, ExactEnrichmentHit>();
   for (const entry of entries) {
     const refs = registryDeploymentRefsOf(entry);
+    // badge-grant factories (no contract yet) contribute no deployment keys.
+    if (refs.length === 0) continue;
     const identity = buildRowIdentity(entry, refs);
     // One snapshot per row, shared by its deployments inside the frozen
     // layer — invisible to callers, who only ever receive clones.
